@@ -43,8 +43,8 @@ npm run typecheck
 | Var | Required | Default |
 |---|---|---|
 | `GEMINI_API_KEY` | Yes | — |
-| `GEMINI_MODEL` | No | `gemini-2.5-flash` |
-| `PORT` | No | `3001` |
+| `GEMINI_MODEL` | No | `gemini-3.6-flash` |
+| `API_PORT` | No | `3001` |
 
 ## Out of Scope (backlog)
 

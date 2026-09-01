@@ -63,7 +63,7 @@ export async function getAdvice(payload: AdviceRequestPayload): Promise<AdviceRe
   if (!apiKey) {
     throw new GeminiAdviceError('GEMINI_API_KEY is not configured on the server');
   }
-  const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  const model = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 
   const client = new GoogleGenAI({ apiKey });
 
