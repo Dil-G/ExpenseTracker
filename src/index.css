@@ -858,6 +858,136 @@ label {
   font-weight: 700;
 }
 
+/* Recurring Payments (redesign) */
+.card-header-subtitle {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin: 2px 0 0;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.category-pill {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.recurring-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.recurring-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  padding: 0 12px 8px 0;
+  border-bottom: 1px solid var(--surface-2);
+}
+
+.recurring-table td {
+  padding: 10px 12px 10px 0;
+  border-bottom: 1px solid var(--surface-2);
+  color: var(--text-primary);
+}
+
+.recurring-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.recurring-table td.num,
+.recurring-table th:nth-child(2),
+.recurring-table th:nth-child(3) {
+  text-align: right;
+}
+
+.recurring-table-actions,
+.recurring-table-actions-header {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.recurring-table-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+/* Below the app's desktop breakpoint, collapse the table into stacked cards -
+   a literal 4-column table plus two icon buttons doesn't fit the 360-430px
+   mobile-first baseline. */
+@media (max-width: 599px) {
+  .recurring-table thead {
+    display: none;
+  }
+
+  .recurring-table,
+  .recurring-table tbody,
+  .recurring-table tr {
+    display: block;
+    width: 100%;
+  }
+
+  .recurring-table tr {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--surface-2);
+  }
+
+  .recurring-table tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .recurring-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 0;
+    border-bottom: none;
+  }
+
+  .recurring-table td.num {
+    text-align: right;
+  }
+
+  .recurring-table td::before {
+    content: attr(data-label);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-tertiary);
+  }
+
+  .recurring-table td.recurring-table-actions {
+    justify-content: flex-end;
+    padding-top: 8px;
+    border-top: 1px solid var(--surface-2);
+    margin-top: 6px;
+  }
+
+  .recurring-table-actions::before {
+    content: none;
+  }
+}
+
 /* Read-only key-value rows inside a card (Settings) */
 .readonly-list {
   margin: 0;
