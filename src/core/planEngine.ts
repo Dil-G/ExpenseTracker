@@ -153,6 +153,7 @@ export function computeProgress(
     CATEGORY_IDS.map((category) => ({ amount: spentThisCycle[category] })),
   );
   const effectiveSavings = discretionaryBudget - totalDiscretionarySpend;
+  const dailySpendRate = totalDiscretionarySpend / cycleWindow.dayIndex;
 
   if (savingsGoal === 0) {
     return {
@@ -162,11 +163,11 @@ export function computeProgress(
       projectedEndOfCycleSavings: discretionaryBudget - totalDiscretionarySpend,
       onTrack: null,
       projectedShortfall: 0,
+      dailySpendRate,
     };
   }
 
   const percentOfGoal = (effectiveSavings / savingsGoal) * 100;
-  const dailySpendRate = totalDiscretionarySpend / cycleWindow.dayIndex;
   const projectedTotalSpend = dailySpendRate * cycleWindow.totalDays;
   const projectedEndOfCycleSavings = discretionaryBudget - projectedTotalSpend;
   const onTrack = projectedEndOfCycleSavings >= savingsGoal;
@@ -179,5 +180,6 @@ export function computeProgress(
     projectedEndOfCycleSavings,
     onTrack,
     projectedShortfall,
+    dailySpendRate,
   };
 }

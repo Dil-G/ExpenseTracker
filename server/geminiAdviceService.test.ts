@@ -32,6 +32,7 @@ const PAYLOAD: AdviceRequestPayload = {
     projectedEndOfCycleSavings: 1230,
     onTrack: true,
     projectedShortfall: 0,
+    dailySpendRate: 20,
   },
 };
 

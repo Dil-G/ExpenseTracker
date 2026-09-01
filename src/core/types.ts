@@ -62,6 +62,7 @@ export interface ProgressResult {
   projectedEndOfCycleSavings: number;
   onTrack: boolean | null;
   projectedShortfall: number;
+  dailySpendRate: number;
 }
 
 export interface AdviceRequestPayload {

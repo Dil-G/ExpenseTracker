@@ -37,11 +37,16 @@ function TodayTab() {
 }
 
 function ProgressTab() {
-  const { progress } = useAppState();
-  if (!progress) return null;
+  const { progress, planView, allowanceBreakdown } = useAppState();
+  if (!progress || !planView.cycleWindow || !planView.config || !allowanceBreakdown) return null;
   return (
     <div className="tab-panel">
-      <ProgressPanel progress={progress} />
+      <ProgressPanel
+        progress={progress}
+        cycleWindow={planView.cycleWindow}
+        allowances={allowanceBreakdown}
+        savingsGoal={planView.config.savingsGoal}
+      />
     </div>
   );
 }
