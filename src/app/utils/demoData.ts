@@ -29,6 +29,22 @@ export function generateAugustDemoEntries(categories: Category[]): AddExpenseInp
   return entries;
 }
 
+/** A handful of entries dated today (2026-09-01) so the cycle-scoped Overview/Progress
+ * views (which only count the current cycle, not history) have something to show too -
+ * the August entries alone only populate Transactions. */
+export function generateSeptemberFirstDemoEntries(categories: Category[]): AddExpenseInput[] {
+  if (categories.length === 0) return [];
+  const date = '2026-09-01';
+  const amounts = [640, 380, 1250, 210];
+  const notes = ['Groceries', 'Coffee', 'Weekend outing', 'Parking'];
+  return amounts.map((amount, i) => ({
+    amount,
+    category: categories[i % categories.length].id,
+    date,
+    note: notes[i % notes.length],
+  }));
+}
+
 function findCategory(categories: Category[], preferredNames: string[]): Category {
   for (const name of preferredNames) {
     const match = categories.find((c) => c.name.toLowerCase() === name.toLowerCase());

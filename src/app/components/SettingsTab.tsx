@@ -5,7 +5,7 @@ import { formatMoney } from '../utils/formatMoney';
 import { PencilIcon, TrashIcon } from './icons';
 import { DateInput } from './DateInput';
 import { EditModal } from './EditModal';
-import { generateAugustDemoEntries, generateDemoRecurringPayments } from '../utils/demoData';
+import { generateAugustDemoEntries, generateDemoRecurringPayments, generateSeptemberFirstDemoEntries } from '../utils/demoData';
 
 function SetupSection() {
   const { planView, saveSetup, fixedExpenses } = useAppState();
@@ -259,6 +259,7 @@ function DemoDataSection() {
 
   function load() {
     generateAugustDemoEntries(categories).forEach((entry) => addExpense(entry));
+    generateSeptemberFirstDemoEntries(categories).forEach((entry) => addExpense(entry));
     generateDemoRecurringPayments(categories).forEach((payment) => addRecurringPayment(payment));
     setStatus('done');
     setTimeout(() => setStatus('idle'), 3000);
@@ -267,7 +268,7 @@ function DemoDataSection() {
   return (
     <section className="card-section" data-testid="settings-demo-data-section">
       <h2>Demo Data</h2>
-      <p>Fill August 2026 with sample transactions and recurring payments, to see Transactions, Overview and Recurring with real data.</p>
+      <p>Fill August 2026 and today with sample transactions and recurring payments, to see Transactions, Overview and Recurring with real data.</p>
       <button type="button" onClick={load} data-testid="settings-load-demo-data-button">
         Load Demo Data
       </button>
