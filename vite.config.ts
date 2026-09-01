@@ -7,7 +7,9 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: `http://127.0.0.1:${process.env.PORT || 3001}`,
+        // API_PORT, not PORT: many hosts/launchers set PORT to the *web* server's port,
+        // which would silently aim this proxy at Vite itself (ECONNREFUSED / 502).
+        target: `http://127.0.0.1:${process.env.API_PORT || 3001}`,
         changeOrigin: true,
       },
     },
