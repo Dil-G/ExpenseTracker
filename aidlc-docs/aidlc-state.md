@@ -62,3 +62,16 @@
 - **Current Stage**: Unit 2 (Web App & Advice Proxy) — Code Generation complete, awaiting approval
 - **Next Stage**: Build and Test
 - **Status**: Code generated and verified (typecheck clean, 49/49 tests passing, build succeeds), awaiting user approval
+
+---
+
+## Change Request 2 (2026-09-01) — Complete
+
+Project is brownfield (code exists and is deployed-in-progress). User requested 7 UI/feature changes; several were structural (open categories, multi-month goals, recurring payments, nav IA). Reopened Requirements Analysis, then implemented directly against the approved spec (skipped a separate Application Design/Units Generation ceremony given this is iterative work on an existing, well-understood codebase — verified continuously with typecheck/tests/build instead of a second gate ceremony).
+
+- [x] Workspace assessed as brownfield with existing code
+- [x] Requirements Analysis — `change-request-2-requirements.md` approved
+- [x] Implementation — core engine, storage, all services, AppProvider, full 4-tab UI rewrite
+- [x] Verification — typecheck clean, 55/55 tests passing, build succeeds, manually verified all 4 tabs in-browser
+
+**Current Status**: Complete. See `aidlc-docs/construction/change-request-2-code-summary.md` for the full file-by-file summary and the bugs found/fixed along the way (a real double-banking bug in the savings ledger, two CSS regressions, 4 stray em-dashes).

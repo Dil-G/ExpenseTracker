@@ -1,12 +1,29 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { LocalStorageAdapter } from '../../core/storage/localStorageAdapter';
-import type { AdviceResponse, CategoryId, ExpenseEntry, FixedExpenseItem, PlanConfig } from '../../core/types';
-import { buildPlanView, saveSetup as saveSetupService, type PlanView } from '../services/planService';
-import { addExpense as addExpenseService, buildAllowanceBreakdown, buildProgress, type AddExpenseInput } from '../services/trackingService';
+import type { AdviceResponse, Category, ExpenseEntry, FixedExpenseItem, Goal, PlanConfig, RecurringPayment, SavingsLedgerState } from '../../core/types';
+import { buildPlanView, refreshSavingsLedger, saveGoal as saveGoalService, saveSetup as saveSetupService, type PlanView } from '../services/planService';
+import {
+  addExpense as addExpenseService,
+  buildCategorySpend,
+  buildProgress,
+  buildTodaySpend,
+  deleteExpense as deleteExpenseService,
+  updateExpense as updateExpenseService,
+  type AddExpenseInput,
+} from '../services/trackingService';
+import { addCategory as addCategoryService, deleteCategory as deleteCategoryService, renameCategory as renameCategoryService } from '../services/categoryService';
+import {
+  addRecurringPayment as addRecurringPaymentService,
+  deleteRecurringPayment as deleteRecurringPaymentService,
+  processRecurringPayments,
+  updateRecurringPayment as updateRecurringPaymentService,
+  type AddRecurringPaymentInput,
+} from '../services/recurringService';
 import { buildAdviceRequestPayload, shouldAutoFetchWeekly } from '../services/adviceService';
 import { fetchAdvice } from '../services/adviceClient';
 
-export type TabId = 'today' | 'progress' | 'advice';
+export type TabId = 'overview' | 'transactions' | 'recurring' | 'settings';
+export type OverviewMode = 'daily' | 'monthly';
 export type AdviceUIStatus = 'idle' | 'loading' | 'success' | 'error';
 
 export interface AdviceUIState {
@@ -20,16 +37,27 @@ interface AppContextValue {
   planView: PlanView;
   fixedExpenses: FixedExpenseItem[];
   entries: ExpenseEntry[];
-  allowanceBreakdown: ReturnType<typeof buildAllowanceBreakdown> | null;
+  categories: Category[];
+  recurringPayments: RecurringPayment[];
+  categorySpend: Record<string, number>;
+  todaySpend: number;
   progress: ReturnType<typeof buildProgress> | null;
   activeTab: TabId;
   setActiveTab: (tab: TabId) => void;
-  isSetupWizardOpen: boolean;
-  openSetupWizard: () => void;
-  closeSetupWizard: () => void;
+  overviewMode: OverviewMode;
+  setOverviewMode: (mode: OverviewMode) => void;
   saveSetup: (config: PlanConfig, fixedExpenses: FixedExpenseItem[]) => void;
-  lastUsedCategory: CategoryId;
+  saveGoal: (goal: Goal) => void;
+  lastUsedCategory: string;
   addExpense: (input: AddExpenseInput) => void;
+  updateExpense: (id: string, patch: Partial<ExpenseEntry>) => void;
+  deleteExpense: (id: string) => void;
+  addCategory: (name: string) => void;
+  renameCategory: (id: string, newName: string) => void;
+  deleteCategory: (id: string) => boolean;
+  addRecurringPayment: (input: AddRecurringPaymentInput) => void;
+  updateRecurringPayment: (id: string, patch: Partial<RecurringPayment>) => void;
+  deleteRecurringPayment: (id: string) => void;
   advice: AdviceUIState;
   requestAdvice: () => void;
 }
@@ -39,41 +67,90 @@ const AppContext = createContext<AppContextValue | null>(null);
 export function AppProvider({ children }: { children: ReactNode }) {
   const [storage] = useState(() => new LocalStorageAdapter());
   const [config, setConfig] = useState<PlanConfig | null>(null);
+  const [goal, setGoal] = useState<Goal | null>(null);
   const [fixedExpenses, setFixedExpenses] = useState<FixedExpenseItem[]>([]);
   const [entries, setEntries] = useState<ExpenseEntry[]>([]);
-  const [activeTab, setActiveTab] = useState<TabId>('today');
-  const [isSetupWizardOpen, setIsSetupWizardOpen] = useState(false);
-  const [lastUsedCategory, setLastUsedCategory] = useState<CategoryId>('food');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [recurringPayments, setRecurringPayments] = useState<RecurringPayment[]>([]);
+  const [ledger, setLedger] = useState<SavingsLedgerState>({ bankedTotal: 0, lastBankedCycleStart: null });
+  const [activeTab, setActiveTab] = useState<TabId>('overview');
+  const [overviewMode, setOverviewMode] = useState<OverviewMode>('daily');
+  const [lastUsedCategory, setLastUsedCategory] = useState<string>('');
   const [advice, setAdvice] = useState<AdviceUIState>({ status: 'idle', data: null, errorMessage: null, lastFetchKind: null });
 
   useEffect(() => {
     const loadedConfig = storage.getPlanConfig();
+    const loadedGoal = storage.getGoal();
+    const loadedFixedExpenses = storage.getFixedExpenses();
+    let loadedEntries = storage.getExpenseEntries();
+    const loadedCategories = storage.getCategories();
+    let loadedRecurring = storage.getRecurringPayments();
+    let loadedLedger = storage.getSavingsLedger();
+
+    const today = new Date();
+
+    if (loadedConfig) {
+      const cycleWindow = buildPlanView(loadedConfig, loadedGoal, loadedFixedExpenses, loadedLedger, today).cycleWindow!;
+      const newEntries = processRecurringPayments(storage, loadedRecurring, cycleWindow, today);
+      if (newEntries.length > 0) {
+        loadedEntries = [...loadedEntries, ...newEntries];
+        loadedRecurring = storage.getRecurringPayments();
+      }
+      if (loadedGoal) {
+        loadedLedger = refreshSavingsLedger(storage, loadedConfig, loadedGoal, loadedFixedExpenses, loadedEntries, today);
+      }
+    }
+
     setConfig(loadedConfig);
-    setFixedExpenses(storage.getFixedExpenses());
-    setEntries(storage.getExpenseEntries());
-    if (loadedConfig === null) setIsSetupWizardOpen(true);
+    setGoal(loadedGoal);
+    setFixedExpenses(loadedFixedExpenses);
+    setEntries(loadedEntries);
+    setCategories(loadedCategories);
+    setRecurringPayments(loadedRecurring);
+    setLedger(loadedLedger);
+    setLastUsedCategory(loadedCategories[0]?.id ?? '');
   }, [storage]);
 
   const today = useMemo(() => new Date(), []);
 
-  const planView = useMemo(() => buildPlanView(config, fixedExpenses, today), [config, fixedExpenses, today]);
+  const planView = useMemo(() => buildPlanView(config, goal, fixedExpenses, ledger, today), [config, goal, fixedExpenses, ledger, today]);
 
-  const allowanceBreakdown = useMemo(() => {
-    if (!planView.config || !planView.feasibility || !planView.cycleWindow) return null;
-    return buildAllowanceBreakdown(planView.feasibility, planView.config, entries, planView.cycleWindow, today);
-  }, [planView, entries, today]);
+  const categorySpend = useMemo(() => {
+    if (!planView.cycleWindow) return {};
+    return buildCategorySpend(entries, planView.cycleWindow, today);
+  }, [entries, planView.cycleWindow, today]);
+
+  const todaySpend = useMemo(() => {
+    if (!planView.cycleWindow) return 0;
+    return buildTodaySpend(entries, planView.cycleWindow, today);
+  }, [entries, planView.cycleWindow, today]);
 
   const progress = useMemo(() => {
-    if (!planView.config || !planView.feasibility || !planView.cycleWindow) return null;
-    return buildProgress(planView.feasibility, planView.config, entries, planView.cycleWindow, today);
-  }, [planView, entries, today]);
+    if (!planView.cycleWindow || !planView.feasibility) return null;
+    return buildProgress(
+      planView.feasibility.discretionaryBudget,
+      planView.bankedTotal,
+      goal?.targetAmount ?? 0,
+      planView.requiredMonthlyPace,
+      entries,
+      planView.cycleWindow,
+      today,
+    );
+  }, [planView, goal, entries, today]);
 
   const saveSetup = useCallback(
     (newConfig: PlanConfig, newFixedExpenses: FixedExpenseItem[]) => {
       saveSetupService(storage, newConfig, newFixedExpenses);
       setConfig(newConfig);
       setFixedExpenses(newFixedExpenses);
-      setIsSetupWizardOpen(false);
+    },
+    [storage],
+  );
+
+  const saveGoal = useCallback(
+    (newGoal: Goal) => {
+      saveGoalService(storage, newGoal);
+      setGoal(newGoal);
     },
     [storage],
   );
@@ -87,13 +164,85 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [storage],
   );
 
+  const updateExpense = useCallback(
+    (id: string, patch: Partial<ExpenseEntry>) => {
+      updateExpenseService(storage, id, patch);
+      setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)));
+    },
+    [storage],
+  );
+
+  const deleteExpense = useCallback(
+    (id: string) => {
+      deleteExpenseService(storage, id);
+      setEntries((prev) => prev.filter((e) => e.id !== id));
+    },
+    [storage],
+  );
+
+  const addCategory = useCallback(
+    (name: string) => {
+      setCategories(addCategoryService(storage, categories, name));
+    },
+    [storage, categories],
+  );
+
+  const renameCategory = useCallback(
+    (id: string, newName: string) => {
+      setCategories(renameCategoryService(storage, categories, id, newName));
+    },
+    [storage, categories],
+  );
+
+  const deleteCategory = useCallback(
+    (id: string): boolean => {
+      const result = deleteCategoryService(storage, categories, entries, id);
+      if (result === null) return false;
+      setCategories(result);
+      return true;
+    },
+    [storage, categories, entries],
+  );
+
+  const addRecurringPayment = useCallback(
+    (input: AddRecurringPaymentInput) => {
+      const payment = addRecurringPaymentService(storage, input);
+      setRecurringPayments((prev) => [...prev, payment]);
+    },
+    [storage],
+  );
+
+  const updateRecurringPayment = useCallback(
+    (id: string, patch: Partial<RecurringPayment>) => {
+      updateRecurringPaymentService(storage, id, patch);
+      setRecurringPayments((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+    },
+    [storage],
+  );
+
+  const deleteRecurringPayment = useCallback(
+    (id: string) => {
+      deleteRecurringPaymentService(storage, id);
+      setRecurringPayments((prev) => prev.filter((p) => p.id !== id));
+    },
+    [storage],
+  );
+
   const requestAdvice = useCallback(
     (kind: 'manual' | 'weekly' = 'manual') => {
-      if (!planView.config || !planView.feasibility || !allowanceBreakdown || !progress) return;
+      if (!planView.config || !planView.feasibility || !progress) return;
       setAdvice({ status: 'loading', data: null, errorMessage: null, lastFetchKind: kind });
 
       const fixedExpensesTotal = fixedExpenses.reduce((total, item) => total + item.amount, 0);
-      const payload = buildAdviceRequestPayload(planView.config, fixedExpensesTotal, planView.feasibility, allowanceBreakdown, progress);
+      const payload = buildAdviceRequestPayload(
+        planView.config,
+        fixedExpensesTotal,
+        goal,
+        planView.requiredMonthlyPace,
+        planView.feasibility,
+        categorySpend,
+        progress,
+      );
 
       fetchAdvice(payload)
         .then((data) => {
@@ -107,11 +256,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             errorMessage: error instanceof Error ? error.message : 'Advice is temporarily unavailable.',
             lastFetchKind: kind,
           });
-          // deliberately not updating lastAdviceFetchAt on failure, so a failed weekly
-          // check retries next app load rather than waiting another 7 days
         });
     },
-    [planView, allowanceBreakdown, progress, fixedExpenses, storage],
+    [planView, progress, fixedExpenses, goal, categorySpend, storage],
   );
 
   useEffect(() => {
@@ -126,16 +273,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     planView,
     fixedExpenses,
     entries,
-    allowanceBreakdown,
+    categories,
+    recurringPayments,
+    categorySpend,
+    todaySpend,
     progress,
     activeTab,
     setActiveTab,
-    isSetupWizardOpen,
-    openSetupWizard: () => setIsSetupWizardOpen(true),
-    closeSetupWizard: () => setIsSetupWizardOpen(false),
+    overviewMode,
+    setOverviewMode,
     saveSetup,
+    saveGoal,
     lastUsedCategory,
     addExpense,
+    updateExpense,
+    deleteExpense,
+    addCategory,
+    renameCategory,
+    deleteCategory,
+    addRecurringPayment,
+    updateRecurringPayment,
+    deleteRecurringPayment,
     advice,
     requestAdvice: () => requestAdvice('manual'),
   };

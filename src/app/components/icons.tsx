@@ -61,3 +61,30 @@ export function SpinnerIcon(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+export function TrashIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base(props)}>
+      <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z" />
+    </svg>
+  );
+}
+
+export function PencilIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base(props)}>
+      <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  );
+}
+
+export function RepeatIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base(props)}>
+      <path d="M17 2 21 6 17 10" />
+      <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+      <path d="M7 22 3 18 7 14" />
+      <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+    </svg>
+  );
+}

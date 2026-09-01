@@ -1,4 +1,4 @@
-import type { AdviceRequestPayload, AllowanceBreakdown, FeasibilityResult, PlanConfig, ProgressResult } from '../../core/types';
+import type { AdviceRequestPayload, CategorySpendMap, FeasibilityResult, Goal, PlanConfig, ProgressResult } from '../../core/types';
 
 const WEEKLY_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -14,16 +14,20 @@ export function shouldAutoFetchWeekly(lastFetchAt: string | null, now: Date): bo
 export function buildAdviceRequestPayload(
   config: PlanConfig,
   fixedExpensesTotal: number,
+  goal: Goal | null,
+  requiredMonthlyPace: number,
   feasibility: FeasibilityResult,
-  categoryAllowances: AllowanceBreakdown,
+  categorySpend: CategorySpendMap,
   progress: ProgressResult,
 ): AdviceRequestPayload {
   return {
     income: config.monthlyIncome,
     fixedExpensesTotal,
-    savingsGoal: config.savingsGoal,
+    targetAmount: goal?.targetAmount ?? 0,
+    targetDate: goal?.targetDate ?? '',
+    requiredMonthlyPace,
     feasibility,
-    categoryAllowances,
+    categorySpend,
     progress,
     currency: config.currency,
   };

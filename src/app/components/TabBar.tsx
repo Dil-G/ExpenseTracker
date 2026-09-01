@@ -1,9 +1,10 @@
 import { useAppState, type TabId } from '../state/AppProvider';
 
 const TABS: Array<{ id: TabId; label: string }> = [
-  { id: 'today', label: 'Today' },
-  { id: 'progress', label: 'Progress' },
-  { id: 'advice', label: 'Advice' },
+  { id: 'overview', label: 'Overview' },
+  { id: 'transactions', label: 'Transactions' },
+  { id: 'recurring', label: 'Recurring' },
+  { id: 'settings', label: 'Settings' },
 ];
 
 export function TabBar() {

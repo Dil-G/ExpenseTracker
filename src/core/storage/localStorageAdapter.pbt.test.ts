@@ -4,7 +4,7 @@
 import fc from 'fast-check';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { LocalStorageAdapter } from './localStorageAdapter';
-import { genFixedExpenses, genExpenseEntries, genPlanConfig } from '../testGenerators';
+import { genFixedExpenses, genExpenseEntries, genGoal, genPlanConfig, genToday } from '../testGenerators';
 
 describe('LocalStorageAdapter round-trip properties', () => {
   let adapter: LocalStorageAdapter;
@@ -38,6 +38,15 @@ describe('LocalStorageAdapter round-trip properties', () => {
         window.localStorage.clear(); // entries accumulate via addExpenseEntry, so isolate each run explicitly
         for (const entry of entries) adapter.addExpenseEntry(entry);
         expect(adapter.getExpenseEntries()).toEqual(entries);
+      }),
+    );
+  });
+
+  it('PBT-02: Goal round-trips through write/read unchanged', () => {
+    fc.assert(
+      fc.property(genToday().chain((today) => genGoal(today)), (goal) => {
+        adapter.setGoal(goal);
+        expect(adapter.getGoal()).toEqual(goal);
       }),
     );
   });

@@ -12,7 +12,9 @@ const RESPONSE_SCHEMA = {
       items: {
         type: Type.OBJECT,
         properties: {
-          category: { type: Type.STRING, enum: ['food', 'transport', 'entertainment', 'other'] },
+          // Categories are user-defined (CR2) - no fixed enum. The prompt instructs the
+          // model to only use category ids from the list it was given.
+          category: { type: Type.STRING },
           suggestedReductionAmount: { type: Type.NUMBER },
           reason: { type: Type.STRING },
         },
@@ -27,25 +29,27 @@ const RESPONSE_SCHEMA = {
 } as const;
 
 function buildPrompt(payload: AdviceRequestPayload): string {
+  const categoryIds = Object.keys(payload.categorySpend);
   return `You are a plain-language personal finance coach for a budgeting app called Rollover.
-You are given the user's ALREADY-COMPUTED monthly plan numbers below. Do not recompute or
+You are given the user's ALREADY-COMPUTED plan numbers below. Do not recompute or
 second-guess any of these numbers — treat them as ground truth and give advice based on them.
 All amounts are in the user's own currency (${payload.currency}); do not add a currency symbol.
+Categories have no fixed budget or limit in this app — spend per category is shown for
+visibility only. When you mention a category in categoriesToTrim, use one of these exact
+category ids: ${categoryIds.length > 0 ? categoryIds.join(', ') : '(none logged yet)'}.
 
 Monthly income: ${payload.income}
 Total fixed expenses: ${payload.fixedExpensesTotal}
-Savings goal: ${payload.savingsGoal}
+Savings goal: ${payload.targetAmount} by ${payload.targetDate} (requires roughly ${payload.requiredMonthlyPace.toFixed(2)}/month to stay on pace)
 Feasible: ${payload.feasibility.feasible}
-${payload.feasibility.feasible ? '' : `Shortfall: ${payload.feasibility.shortfall}, largest feasible goal: ${payload.feasibility.largestFeasibleGoal}`}
+${payload.feasibility.feasible ? '' : `Shortfall: ${payload.feasibility.shortfall}, largest feasible monthly pace right now: ${payload.feasibility.largestFeasibleGoal}`}
 
-Category allowances and spend so far this cycle:
-${Object.entries(payload.categoryAllowances)
-  .map(([category, a]) => `- ${category}: monthly allowance ${a.monthlyAllowance}, spent so far ${a.spentThisCycle}, daily allowance ${a.dailyAllowance.toFixed(2)}`)
-  .join('\n')}
+Spend so far this cycle, by category:
+${categoryIds.length > 0 ? categoryIds.map((id) => `- ${id}: ${payload.categorySpend[id]}`).join('\n') : '(nothing logged yet this cycle)'}
 
 Progress: ${
     payload.progress.hasGoal
-      ? `${payload.progress.percentOfGoal?.toFixed(1)}% of goal reached, projected end-of-cycle savings ${payload.progress.projectedEndOfCycleSavings.toFixed(2)}, on track: ${payload.progress.onTrack}${payload.progress.onTrack === false ? `, projected shortfall ${payload.progress.projectedShortfall.toFixed(2)}` : ''}`
+      ? `${payload.progress.percentOfGoal?.toFixed(1)}% of goal reached, projected end-of-cycle savings this cycle ${payload.progress.projectedEndOfCycleSavings.toFixed(2)}, on track: ${payload.progress.onTrack}${payload.progress.onTrack === false ? `, projected shortfall ${payload.progress.projectedShortfall.toFixed(2)}` : ''}`
       : 'no savings goal set'
   }
 

@@ -7,9 +7,7 @@ try {
 import express from 'express';
 import type { Request, Response } from 'express';
 import { GeminiAdviceError, getAdvice } from './geminiAdviceService';
-import type { AdviceRequestPayload, CategoryId } from '../src/core/types';
-
-const CATEGORY_IDS: readonly CategoryId[] = ['food', 'transport', 'entertainment', 'other'];
+import type { AdviceRequestPayload } from '../src/core/types';
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
@@ -19,7 +17,13 @@ function validatePayload(body: unknown): body is AdviceRequestPayload {
   if (typeof body !== 'object' || body === null) return false;
   const b = body as Record<string, unknown>;
 
-  if (!isFiniteNumber(b.income) || !isFiniteNumber(b.fixedExpensesTotal) || !isFiniteNumber(b.savingsGoal)) {
+  if (
+    !isFiniteNumber(b.income) ||
+    !isFiniteNumber(b.fixedExpensesTotal) ||
+    !isFiniteNumber(b.targetAmount) ||
+    typeof b.targetDate !== 'string' ||
+    !isFiniteNumber(b.requiredMonthlyPace)
+  ) {
     return false;
   }
   if (typeof b.currency !== 'string' || b.currency.length === 0) return false;
@@ -35,17 +39,16 @@ function validatePayload(body: unknown): body is AdviceRequestPayload {
     return false;
   }
 
-  const allowances = b.categoryAllowances as Record<string, unknown> | undefined;
-  if (!allowances) return false;
-  for (const category of CATEGORY_IDS) {
-    const a = allowances[category] as Record<string, unknown> | undefined;
-    if (!a || !isFiniteNumber(a.monthlyAllowance) || !isFiniteNumber(a.spentThisCycle) || !isFiniteNumber(a.dailyAllowance)) {
-      return false;
-    }
+  // categorySpend is an open map (CR2: user-defined categories) - just check it's a
+  // plain object of finite numbers, not a fixed key set.
+  const categorySpend = b.categorySpend as Record<string, unknown> | undefined;
+  if (!categorySpend || typeof categorySpend !== 'object') return false;
+  for (const value of Object.values(categorySpend)) {
+    if (!isFiniteNumber(value)) return false;
   }
 
   const progress = b.progress as Record<string, unknown> | undefined;
-  if (!progress || typeof progress.hasGoal !== 'boolean' || !isFiniteNumber(progress.effectiveSavings)) {
+  if (!progress || typeof progress.hasGoal !== 'boolean' || !isFiniteNumber(progress.totalSavedSoFar)) {
     return false;
   }
 

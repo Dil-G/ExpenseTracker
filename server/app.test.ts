@@ -15,16 +15,22 @@ const { createApp } = await import('./app');
 const VALID_PAYLOAD = {
   income: 3000,
   fixedExpensesTotal: 1100,
-  savingsGoal: 500,
+  targetAmount: 6000,
+  targetDate: '2027-01-01',
+  requiredMonthlyPace: 500,
   currency: 'USD',
   feasibility: { feasible: true, discretionaryBudget: 1400, shortfall: 0, largestFeasibleGoal: 1900 },
-  categoryAllowances: {
-    food: { monthlyAllowance: 560, spentThisCycle: 100, remainingBudget: 460, dailyAllowance: 15 },
-    transport: { monthlyAllowance: 350, spentThisCycle: 50, remainingBudget: 300, dailyAllowance: 10 },
-    entertainment: { monthlyAllowance: 210, spentThisCycle: 0, remainingBudget: 210, dailyAllowance: 7 },
-    other: { monthlyAllowance: 280, spentThisCycle: 20, remainingBudget: 260, dailyAllowance: 8.6 },
+  categorySpend: { food: 100, transport: 50, entertainment: 0, other: 20 },
+  progress: {
+    hasGoal: true,
+    totalSavedSoFar: 1230,
+    percentOfGoal: 20.5,
+    requiredMonthlyPace: 500,
+    projectedEndOfCycleSavings: 1230,
+    onTrack: true,
+    projectedShortfall: 0,
+    dailySpendRate: 20,
   },
-  progress: { hasGoal: true, effectiveSavings: 1230, percentOfGoal: 246, projectedEndOfCycleSavings: 1230, onTrack: true, projectedShortfall: 0 },
 };
 
 describe('POST /api/advice', () => {

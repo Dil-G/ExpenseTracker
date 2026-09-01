@@ -209,3 +209,35 @@ Target roughly 3.5 hours of implementation. Keep depth at standard, not comprehe
 **User Input**: N/A (system-initiated)
 **AI Response**: "Executed all 6 steps: server API layer (Express + Gemini structured output via @google/genai Type-based responseSchema, verified against installed package's actual .d.ts rather than assumed), client services + AppProvider, 9 frontend components + mobile-first CSS, targeted test suite (SetupWizard weight-gating, AddExpenseSheet two-tap flow, ProgressPanel conditional rendering, AdvicePanel error state), README + code-summary. Verification: npm run typecheck clean, npm run test 49/49 passing (10 files), npm run build succeeds (~209KB JS / 65KB gzip)."
 **Context**: Code Generation (Unit 2) Part 2 - Generation complete and verified
+
+---
+
+## Change Request 2 - Requirements Analysis (new cycle)
+**Timestamp**: 2026-09-01T02:30:00Z
+**User Input**: "needs these requiremetn changes: merge today and Progress tab with daily/monthly toggle; remove Advice tab, fold into overview as a segment; remove Category Weights modal, show each category as x/total income; add recurring payments, perhaps a new tab; add Transactions tab showing full history; add Settings section to manage custom categories; goals should be dynamic-duration (e.g. 500000 in 6 months), not strictly monthly."
+**AI Response**: "Assessed scope: several items are structural (open/custom categories replacing the fixed CategoryId union, multi-month goal semantics requiring a persisted savings ledger since nothing currently accumulates across cycle boundaries, recurring payments as a new engine concept, navigation IA changes affecting most screens) rather than UI tweaks - reopening Requirements Analysis per project workflow instead of guessing and risking hours of rework. Created change-request-2-questions.md with 7 questions, flagging Q1 (multi-month goal ledger) and Q2 (whether removing category weights also removes the per-category rollover mechanic the app is named after) as the two decisions most consequential to get right before touching code."
+**Context**: Requirements Analysis reopened on existing (brownfield) codebase - questions issued, awaiting answers
+
+---
+
+## Change Request 2 - Questions Answered
+**Timestamp**: 2026-09-01T02:40:00Z
+**User Input**: "reviewed, proceed" (Q1=A persisted ledger, Q2=C changed from default B to full removal of rollover/daily-allowance/per-category budgeting entirely - flat monthly budget number only, categories become pure spend-visibility, Q3=A, Q4=A, Q5=A, Q6=B changed from default A to 4 tabs (Overview/Transactions/Recurring/Settings), Q7=A)
+**AI Response**: "Flagged Q2=C as a deliberate, informed reversal of the app's core rollover mechanic (user picked it after the tradeoff was laid out explicitly, not proceeding blind). Noted a knock-on reconciliation: Q7's Daily view description referenced 'today's rollover allowance', which no longer exists under Q2=C - resolving Daily view to show today's spend only (no allowance comparison), stated directly rather than reopening another question round. Proceeding to write updated requirements covering all 7 decisions."
+**Context**: Requirements Analysis (CR2) - answers collected, no blocking contradictions, one reconciliation noted inline
+
+---
+
+## Change Request 2 - Requirements Document Presented
+**Timestamp**: 2026-09-01T02:45:00Z
+**User Input**: N/A (system-initiated)
+**AI Response**: "Created change-request-2-requirements.md: full domain model (Category, Goal, SavingsLedgerState, RecurringPayment), migration strategy for existing entries (seed default categories with matching ids, zero-transform), FR-1 through FR-7, 4-tab navigation. Presenting for approval before implementation."
+**Context**: Requirements Analysis (CR2) - requirements document complete, requesting approval
+
+---
+
+## Change Request 2 - Approved & Implemented
+**Timestamp**: 2026-09-01T03:15:00Z
+**User Input**: "Approve and continue"
+**AI Response**: "Implemented directly (no separate Application Design/Units Generation ceremony - iterative change on an understood codebase, verified continuously instead). Rewrote core types, planEngine (new: computeRequiredMonthlyPace, updateSavingsLedger; removed: category allowance/weight functions), StoragePort/LocalStorageAdapter (categories with default-seed migration, goal, ledger, recurring payments), all app services, AppProvider, and every UI component (4-tab nav: Overview/Transactions/Recurring/Settings). Found and fixed a real double-banking bug in updateSavingsLedger (resume cursor started at the last-banked cycle instead of the next one) plus two CSS regressions and 4 stray em-dashes during manual verification. Final: typecheck clean, 55/55 tests passing, build succeeds, manually verified all 4 tabs in-browser including recurring-payment auto-logging."
+**Context**: Change Request 2 complete - see aidlc-docs/construction/change-request-2-code-summary.md

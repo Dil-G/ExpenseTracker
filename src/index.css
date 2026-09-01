@@ -158,9 +158,10 @@ h3 {
 
 .progress-goal-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
+  gap: 4px 12px;
   margin-bottom: 10px;
 }
 
@@ -174,7 +175,7 @@ h3 {
 .progress-goal-note {
   font-size: 14px;
   color: var(--text-secondary);
-  white-space: nowrap;
+  text-align: right;
 }
 
 .progress-percent-row {
@@ -670,9 +671,6 @@ label {
 }
 
 .category-breakdown li {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
   padding: 10px 0;
   border-bottom: 1px solid var(--surface-2);
 }
@@ -742,6 +740,99 @@ label {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
+}
+
+/* Overview daily/monthly toggle (CR2) */
+.overview-toggle {
+  display: flex;
+  background: var(--surface-2);
+  border-radius: 999px;
+  padding: 4px;
+  margin-bottom: 16px;
+}
+
+.overview-toggle-button {
+  flex: 1;
+  min-height: 36px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.overview-toggle-button.active {
+  background: var(--surface);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Settings tab (CR2) */
+.settings-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 18px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.settings-row-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* Transactions tab (CR2) */
+.transactions-filter-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.transactions-filter-row select,
+.transactions-filter-row input {
+  flex: 1;
+  min-width: 110px;
+  margin-bottom: 0;
+}
+
+.transaction-list {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 0;
+}
+
+.transaction-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--surface-2);
+}
+
+.transaction-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.transaction-row-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  flex: 1;
+  margin-left: 12px;
+}
+
+.transaction-note {
+  font-style: italic;
+}
+
+.transaction-row--editing {
+  flex-direction: column;
+  align-items: stretch;
 }
 
 /* Scale up for tablet/desktop - single column stays centered rather than stretching edge to edge. */

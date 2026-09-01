@@ -7,10 +7,8 @@ import type { PlanConfig } from '../../core/types';
 
 const CONFIG: PlanConfig = {
   monthlyIncome: 3000,
-  savingsGoal: 500,
   cycleStartDay: 1,
   currency: 'USD',
-  categoryWeights: { food: 25, transport: 25, entertainment: 25, other: 25 },
 };
 
 describe('AdvicePanel', () => {

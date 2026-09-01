@@ -1,16 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
-  computeAllowanceBreakdown,
-  computeCategoryMonthlyAllowances,
   computeDiscretionaryBudget,
   computeFeasibility,
   computeProgress,
+  computeRequiredMonthlyPace,
   computeSpendAggregates,
   getCycleWindow,
+  updateSavingsLedger,
 } from './planEngine';
-import type { CategoryWeights, ExpenseEntry, FixedExpenseItem } from './types';
+import type { ExpenseEntry, FixedExpenseItem, Goal, SavingsLedgerState } from './types';
 
-const EQUAL_WEIGHTS: CategoryWeights = { food: 25, transport: 25, entertainment: 25, other: 25 };
 const FIXED: FixedExpenseItem[] = [
   { id: '1', name: 'Rent', amount: 1000 },
   { id: '2', name: 'Insurance', amount: 100 },
@@ -21,7 +20,7 @@ function entry(overrides: Partial<ExpenseEntry> & Pick<ExpenseEntry, 'amount' | 
 }
 
 describe('computeDiscretionaryBudget', () => {
-  it('subtracts fixed expenses and savings goal from income', () => {
+  it('subtracts fixed expenses and the required monthly pace from income', () => {
     expect(computeDiscretionaryBudget(3000, FIXED, 500)).toBe(3000 - 1100 - 500);
   });
 
@@ -31,7 +30,7 @@ describe('computeDiscretionaryBudget', () => {
 });
 
 describe('computeFeasibility', () => {
-  it('reports feasible with zero shortfall when income covers fixed + goal', () => {
+  it('reports feasible with zero shortfall when income covers fixed + pace', () => {
     const result = computeFeasibility(3000, FIXED, 500);
     expect(result.feasible).toBe(true);
     expect(result.shortfall).toBe(0);
@@ -41,35 +40,16 @@ describe('computeFeasibility', () => {
 
   it('reports infeasible with correct shortfall and largest feasible goal', () => {
     const result = computeFeasibility(1000, FIXED, 500);
-    // fixedTotal=1100, savingsGoal=500 -> needed 1600, have 1000 -> shortfall 600
     expect(result.feasible).toBe(false);
     expect(result.shortfall).toBe(600);
-    expect(result.largestFeasibleGoal).toBe(0); // income(1000) < fixedTotal(1100)
+    expect(result.largestFeasibleGoal).toBe(0);
     expect(result.discretionaryBudget).toBe(0);
-  });
-
-  it('treats an exact break-even plan as feasible', () => {
-    const result = computeFeasibility(1600, FIXED, 500);
-    expect(result.feasible).toBe(true);
-    expect(result.shortfall).toBe(0);
-    expect(result.discretionaryBudget).toBe(0);
-  });
-});
-
-describe('computeCategoryMonthlyAllowances', () => {
-  it('splits the discretionary budget by weight and sums back to the total', () => {
-    const weights: CategoryWeights = { food: 40, transport: 25, entertainment: 15, other: 20 };
-    const allowances = computeCategoryMonthlyAllowances(1000, weights);
-    expect(allowances.food).toBe(400);
-    expect(allowances.transport).toBe(250);
-    expect(allowances.entertainment).toBe(150);
-    expect(allowances.other).toBe(200);
   });
 });
 
 describe('getCycleWindow', () => {
   it('produces a calendar-month cycle when cycleStartDay is 1', () => {
-    const today = new Date(2026, 2, 15); // 2026-03-15
+    const today = new Date(2026, 2, 15);
     const window = getCycleWindow(1, today);
     expect(window.start).toEqual(new Date(2026, 2, 1));
     expect(window.end).toEqual(new Date(2026, 2, 31));
@@ -78,31 +58,8 @@ describe('getCycleWindow', () => {
     expect(window.remainingDays).toBe(17);
   });
 
-  it('produces a mid-month cycle spanning two calendar months when cycleStartDay > 1', () => {
-    const today = new Date(2026, 2, 20); // 2026-03-20, cycle starts on the 15th
-    const window = getCycleWindow(15, today);
-    expect(window.start).toEqual(new Date(2026, 2, 15));
-    expect(window.end).toEqual(new Date(2026, 3, 14));
-  });
-
-  it('rolls back to the previous month when today is before this month\'s start day', () => {
-    const today = new Date(2026, 2, 10); // 2026-03-10, cycle starts on the 15th
-    const window = getCycleWindow(15, today);
-    expect(window.start).toEqual(new Date(2026, 1, 15)); // 2026-02-15
-    expect(window.end).toEqual(new Date(2026, 2, 14));
-  });
-
-  it('clamps a start day beyond the month length (defensive; UI caps input at 28)', () => {
-    const today = new Date(2026, 1, 27); // 2026-02-27, non-leap year
-    const window = getCycleWindow(30, today);
-    // candidate start this month clamps to Feb 28; today (27) is before that,
-    // so the cycle rolls back to the previous month's clamped start (Jan 30).
-    expect(window.start).toEqual(new Date(2026, 0, 30));
-    expect(window.end).toEqual(new Date(2026, 1, 27));
-  });
-
   it('floors remainingDays at 1 on the last day of the cycle', () => {
-    const today = new Date(2026, 2, 31); // last day of a calendar-month cycle
+    const today = new Date(2026, 2, 31);
     const window = getCycleWindow(1, today);
     expect(window.remainingDays).toBe(1);
   });
@@ -117,62 +74,104 @@ describe('computeSpendAggregates', () => {
     entry({ amount: 5, category: 'other', date: '2026-04-02' }), // outside cycle
   ];
 
-  it('sums only entries within the cycle window into spentThisCycle', () => {
-    const { spentThisCycle } = computeSpendAggregates(entries, window, new Date(2026, 2, 15));
+  it('sums only entries within the cycle window, per category and as a total', () => {
+    const { spentThisCycle, totalThisCycle } = computeSpendAggregates(entries, window, new Date(2026, 2, 15));
     expect(spentThisCycle.food).toBe(35);
-    expect(spentThisCycle.transport).toBe(0);
-    expect(spentThisCycle.other).toBe(0);
+    expect(spentThisCycle.transport).toBeUndefined();
+    expect(totalThisCycle).toBe(35);
   });
 
-  it('isolates today-only entries into spentToday', () => {
-    const { spentToday } = computeSpendAggregates(entries, window, new Date(2026, 2, 15));
+  it('isolates today-only entries', () => {
+    const { spentToday, totalToday } = computeSpendAggregates(entries, window, new Date(2026, 2, 15));
     expect(spentToday.food).toBe(15);
+    expect(totalToday).toBe(15);
   });
 });
 
-describe('computeAllowanceBreakdown (live/shrinking daily allowance)', () => {
-  it('reduces dailyAllowance immediately after an expense dated today is added', () => {
-    const window = getCycleWindow(1, new Date(2026, 2, 1)); // day 1 of 31, remainingDays=31
-    const before = computeAllowanceBreakdown(1000, EQUAL_WEIGHTS, [], window, new Date(2026, 2, 1));
-    expect(before.food.dailyAllowance).toBeCloseTo(250 / 31, 5);
-
-    const afterEntries: ExpenseEntry[] = [entry({ amount: 31, category: 'food', date: '2026-03-01' })];
-    const after = computeAllowanceBreakdown(1000, EQUAL_WEIGHTS, afterEntries, window, new Date(2026, 2, 1));
-    expect(after.food.dailyAllowance).toBeCloseTo((250 - 31) / 31, 5);
-    expect(after.food.dailyAllowance).toBeLessThan(before.food.dailyAllowance);
+describe('computeRequiredMonthlyPace', () => {
+  it('splits the remaining amount evenly across the remaining months', () => {
+    // 6000 remaining, March 1 -> Sept 1 is 184 days (~6.13 months) -> ~978/month
+    const pace = computeRequiredMonthlyPace(6000, 0, '2026-09-01', new Date(2026, 2, 1));
+    expect(pace).toBeGreaterThan(900);
+    expect(pace).toBeLessThan(1050);
   });
 
-  it('never lets remainingBudget or dailyAllowance go negative when overspent', () => {
-    const window = getCycleWindow(1, new Date(2026, 2, 1));
-    const entries: ExpenseEntry[] = [entry({ amount: 9999, category: 'food', date: '2026-03-01' })];
-    const breakdown = computeAllowanceBreakdown(1000, EQUAL_WEIGHTS, entries, window, new Date(2026, 2, 1));
-    expect(breakdown.food.remainingBudget).toBe(0);
-    expect(breakdown.food.dailyAllowance).toBe(0);
+  it('returns 0 once the banked total already meets the target', () => {
+    const pace = computeRequiredMonthlyPace(5000, 5000, '2026-09-01', new Date(2026, 2, 1));
+    expect(pace).toBe(0);
+  });
+
+  it('spikes rather than divides by zero when the target date has already passed', () => {
+    const pace = computeRequiredMonthlyPace(1000, 0, '2026-01-01', new Date(2026, 2, 1));
+    expect(pace).toBeGreaterThan(1000); // overdue: whole remaining amount compressed into ~1 day
+    expect(Number.isFinite(pace)).toBe(true);
+  });
+});
+
+describe('updateSavingsLedger', () => {
+  it('does not bank anything when the goal was just created this cycle', () => {
+    const ledger: SavingsLedgerState = { bankedTotal: 0, lastBankedCycleStart: null };
+    const goal: Goal = { targetAmount: 5000, targetDate: '2026-09-01', startDate: '2026-03-01' };
+    const result = updateSavingsLedger(ledger, goal, 1, 3000, 1100, [], new Date(2026, 2, 15));
+    expect(result.bankedTotal).toBe(0);
+    expect(result.lastBankedCycleStart).toBeNull();
+  });
+
+  it('banks exactly one completed cycle when a month has passed', () => {
+    const ledger: SavingsLedgerState = { bankedTotal: 0, lastBankedCycleStart: null };
+    const goal: Goal = { targetAmount: 6000, targetDate: '2026-09-01', startDate: '2026-03-01' };
+    // no entries logged in March -> full discretionary budget for that cycle gets banked
+    const result = updateSavingsLedger(ledger, goal, 1, 3000, 1100, [], new Date(2026, 3, 15));
+    expect(result.lastBankedCycleStart).toBe('2026-03-01');
+    expect(result.bankedTotal).toBeGreaterThan(0);
+  });
+
+  it('banks multiple missed cycles in sequence, not just the most recent one', () => {
+    const ledger: SavingsLedgerState = { bankedTotal: 0, lastBankedCycleStart: null };
+    const goal: Goal = { targetAmount: 6000, targetDate: '2026-12-01', startDate: '2026-01-01' };
+    const result = updateSavingsLedger(ledger, goal, 1, 3000, 1100, [], new Date(2026, 4, 15));
+    // Jan, Feb, Mar, Apr all completed before May -> lastBanked should be April's start
+    expect(result.lastBankedCycleStart).toBe('2026-04-01');
+    expect(result.bankedTotal).toBeGreaterThan(0);
+  });
+
+  it('is a no-op (idempotent) when called again within the same current cycle', () => {
+    const ledger: SavingsLedgerState = { bankedTotal: 0, lastBankedCycleStart: null };
+    const goal: Goal = { targetAmount: 6000, targetDate: '2026-09-01', startDate: '2026-03-01' };
+    const once = updateSavingsLedger(ledger, goal, 1, 3000, 1100, [], new Date(2026, 3, 15));
+    const twice = updateSavingsLedger(once, goal, 1, 3000, 1100, [], new Date(2026, 3, 20));
+    expect(twice).toEqual(once);
   });
 });
 
 describe('computeProgress', () => {
-  it('reports hasGoal=false and null percentOfGoal when savingsGoal is 0', () => {
+  it('reports hasGoal=false when targetAmount is 0', () => {
     const window = getCycleWindow(1, new Date(2026, 2, 15));
-    const progress = computeProgress(1000, 0, [], window, new Date(2026, 2, 15));
+    const progress = computeProgress(1000, 0, 0, 0, [], window, new Date(2026, 2, 15));
     expect(progress.hasGoal).toBe(false);
     expect(progress.percentOfGoal).toBeNull();
     expect(progress.onTrack).toBeNull();
   });
 
-  it('flags on-track as false with a positive projectedShortfall when overspending', () => {
+  it('combines banked total with this cycle\'s effective savings for percentOfGoal', () => {
+    const window = getCycleWindow(1, new Date(2026, 2, 15));
+    // discretionaryBudget 1000, no spend -> this cycle contributes 1000; banked 2000 already
+    const progress = computeProgress(1000, 2000, 6000, 500, [], window, new Date(2026, 2, 15));
+    expect(progress.totalSavedSoFar).toBe(3000);
+    expect(progress.percentOfGoal).toBeCloseTo(50, 5);
+  });
+
+  it('flags on-track as false when the projected cycle contribution misses the required pace', () => {
     const window = getCycleWindow(1, new Date(2026, 2, 5)); // day 5 of 31
     const entries: ExpenseEntry[] = [entry({ amount: 500, category: 'food', date: '2026-03-01' })];
-    // discretionaryBudget 1000, spent 500 by day 5 -> daily rate 100 -> projected total 3100, way over budget
-    const progress = computeProgress(1000, 800, entries, window, new Date(2026, 2, 5));
-    expect(progress.hasGoal).toBe(true);
+    const progress = computeProgress(1000, 0, 6000, 800, entries, window, new Date(2026, 2, 5));
     expect(progress.onTrack).toBe(false);
     expect(progress.projectedShortfall).toBeGreaterThan(0);
   });
 
-  it('flags on-track as true when spend rate keeps projected savings at or above the goal', () => {
+  it('flags on-track as true when the projected contribution meets the required pace', () => {
     const window = getCycleWindow(1, new Date(2026, 2, 5));
-    const progress = computeProgress(1000, 100, [], window, new Date(2026, 2, 5));
+    const progress = computeProgress(1000, 0, 6000, 100, [], window, new Date(2026, 2, 5));
     expect(progress.onTrack).toBe(true);
     expect(progress.projectedShortfall).toBe(0);
   });

@@ -1,30 +1,30 @@
-import { computeAllowanceBreakdown, computeProgress } from '../../core/planEngine';
-import type { AllowanceBreakdown, CycleWindow, ExpenseEntry, FeasibilityResult, PlanConfig, ProgressResult } from '../../core/types';
+import { computeProgress, computeSpendAggregates } from '../../core/planEngine';
+import type { CategorySpendMap, CycleWindow, ExpenseEntry, ProgressResult } from '../../core/types';
 import type { StoragePort } from '../../core/storage/storagePort';
 
-export function buildAllowanceBreakdown(
-  feasibility: FeasibilityResult,
-  config: PlanConfig,
-  entries: ExpenseEntry[],
-  cycleWindow: CycleWindow,
-  today: Date,
-): AllowanceBreakdown {
-  return computeAllowanceBreakdown(feasibility.discretionaryBudget, config.categoryWeights, entries, cycleWindow, today);
+export function buildCategorySpend(entries: ExpenseEntry[], cycleWindow: CycleWindow, today: Date): CategorySpendMap {
+  return computeSpendAggregates(entries, cycleWindow, today).spentThisCycle;
+}
+
+export function buildTodaySpend(entries: ExpenseEntry[], cycleWindow: CycleWindow, today: Date): number {
+  return computeSpendAggregates(entries, cycleWindow, today).totalToday;
 }
 
 export function buildProgress(
-  feasibility: FeasibilityResult,
-  config: PlanConfig,
+  discretionaryBudget: number,
+  bankedTotal: number,
+  targetAmount: number,
+  requiredMonthlyPace: number,
   entries: ExpenseEntry[],
   cycleWindow: CycleWindow,
   today: Date,
 ): ProgressResult {
-  return computeProgress(feasibility.discretionaryBudget, config.savingsGoal, entries, cycleWindow, today);
+  return computeProgress(discretionaryBudget, bankedTotal, targetAmount, requiredMonthlyPace, entries, cycleWindow, today);
 }
 
 export interface AddExpenseInput {
   amount: number;
-  category: ExpenseEntry['category'];
+  category: string;
   date: string;
   note?: string;
 }
@@ -39,4 +39,12 @@ export function addExpense(storage: StoragePort, input: AddExpenseInput): Expens
   };
   storage.addExpenseEntry(entry);
   return entry;
+}
+
+export function updateExpense(storage: StoragePort, id: string, patch: Partial<ExpenseEntry>): void {
+  storage.updateExpenseEntry(id, patch);
+}
+
+export function deleteExpense(storage: StoragePort, id: string): void {
+  storage.deleteExpenseEntry(id);
 }

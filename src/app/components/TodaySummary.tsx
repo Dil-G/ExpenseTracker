@@ -1,18 +1,14 @@
-import { CATEGORY_IDS } from '../../core/types';
-import type { AllowanceBreakdown } from '../../core/types';
-import { useAppState } from '../state/AppProvider';
+import { formatMoney } from '../utils/formatMoney';
 
-export function TodaySummary({ allowances }: { allowances: AllowanceBreakdown }) {
-  const { entries } = useAppState();
-  const today = new Date().toISOString().slice(0, 10);
-  const spentToday = entries.filter((e) => e.date === today).reduce((sum, e) => sum + e.amount, 0);
-  const totalDailyAllowance = CATEGORY_IDS.reduce((sum, category) => sum + allowances[category].dailyAllowance, 0);
-
+/** Daily view (CR2 Q7): today's total spend only - there's no per-category or overall
+ * daily allowance left to compare it against (Q2: the rollover/allowance mechanic was
+ * removed entirely, categories are spend-visibility only). */
+export function TodaySummary({ todaySpend }: { todaySpend: number }) {
   return (
     <section className="today-summary" data-testid="today-summary">
       <h2>Today</h2>
       <p>
-        Spent today: <strong>{spentToday.toFixed(2)}</strong> / allowance: <strong>{totalDailyAllowance.toFixed(2)}</strong>
+        Spent today: <strong className="num">{formatMoney(todaySpend)}</strong>
       </p>
     </section>
   );

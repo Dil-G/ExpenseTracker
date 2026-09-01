@@ -1,58 +1,43 @@
 import {
-  CATEGORY_IDS,
-  type AllowanceBreakdown,
-  type CategoryId,
-  type CategoryWeights,
+  type CategorySpendMap,
   type CycleWindow,
   type ExpenseEntry,
   type FeasibilityResult,
   type FixedExpenseItem,
+  type Goal,
   type ProgressResult,
+  type SavingsLedgerState,
 } from './types';
-import { addDays, clampDayToMonth, daysBetween, startOfDay, toISODate } from './dateUtils';
+import { addDays, clampDayToMonth, daysBetween, parseISODate, startOfDay, toISODate } from './dateUtils';
 
 function sumAmounts(items: Array<{ amount: number }>): number {
   return items.reduce((total, item) => total + item.amount, 0);
 }
 
-function emptyCategoryRecord(): Record<CategoryId, number> {
-  return { food: 0, transport: 0, entertainment: 0, other: 0 };
-}
-
-/** income - fixedExpenses - savingsGoal, floored at 0 (never negative). */
+/** income - fixedExpenses - requiredMonthlyPace, floored at 0 (never negative). */
 export function computeDiscretionaryBudget(
   income: number,
   fixedExpenses: FixedExpenseItem[],
-  savingsGoal: number,
+  requiredMonthlyPace: number,
 ): number {
   const fixedTotal = sumAmounts(fixedExpenses);
-  return Math.max(income - fixedTotal - savingsGoal, 0);
+  return Math.max(income - fixedTotal - requiredMonthlyPace, 0);
 }
 
 /** Feasibility is independent of the branch: largestFeasibleGoal and shortfall are
- * always computed via max()/floor, not derived conditionally. See business-logic-model.md. */
+ * always computed via max()/floor, not derived conditionally. See business-logic-model.md.
+ * "Goal" here is the derived requiredMonthlyPace (CR2), not a manually-entered value. */
 export function computeFeasibility(
   income: number,
   fixedExpenses: FixedExpenseItem[],
-  savingsGoal: number,
+  requiredMonthlyPace: number,
 ): FeasibilityResult {
   const fixedTotal = sumAmounts(fixedExpenses);
   const largestFeasibleGoal = Math.max(income - fixedTotal, 0);
-  const shortfall = Math.max(fixedTotal + savingsGoal - income, 0);
+  const shortfall = Math.max(fixedTotal + requiredMonthlyPace - income, 0);
   const feasible = shortfall === 0;
-  const discretionaryBudget = Math.max(income - fixedTotal - savingsGoal, 0);
+  const discretionaryBudget = Math.max(income - fixedTotal - requiredMonthlyPace, 0);
   return { feasible, discretionaryBudget, shortfall, largestFeasibleGoal };
-}
-
-export function computeCategoryMonthlyAllowances(
-  discretionaryBudget: number,
-  weights: CategoryWeights,
-): Record<CategoryId, number> {
-  const result = emptyCategoryRecord();
-  for (const category of CATEGORY_IDS) {
-    result[category] = discretionaryBudget * (weights[category] / 100);
-  }
-  return result;
 }
 
 /** Cycle window for a given cycleStartDay (1-28) and "today". Start day is clamped to
@@ -89,94 +74,130 @@ export function getCycleWindow(cycleStartDay: number, today: Date): CycleWindow 
   return { start, end, dayIndex, totalDays, remainingDays };
 }
 
+/** Categories are open/dynamic (CR2) - spend maps are built from whatever category ids
+ * appear in the entries, not a fixed set. */
 export function computeSpendAggregates(
   entries: ExpenseEntry[],
   cycleWindow: CycleWindow,
   today: Date,
-): { spentThisCycle: Record<CategoryId, number>; spentToday: Record<CategoryId, number> } {
+): { spentThisCycle: CategorySpendMap; spentToday: CategorySpendMap; totalThisCycle: number; totalToday: number } {
   const startMs = cycleWindow.start.getTime();
   const endMs = cycleWindow.end.getTime();
   const todayIso = toISODate(today);
 
-  const spentThisCycle = emptyCategoryRecord();
-  const spentToday = emptyCategoryRecord();
+  const spentThisCycle: CategorySpendMap = {};
+  const spentToday: CategorySpendMap = {};
+  let totalThisCycle = 0;
+  let totalToday = 0;
 
   for (const entry of entries) {
     const entryDate = startOfDay(new Date(`${entry.date}T00:00:00`));
     const entryMs = entryDate.getTime();
     if (entryMs < startMs || entryMs > endMs) continue;
-    spentThisCycle[entry.category] += entry.amount;
+    spentThisCycle[entry.category] = (spentThisCycle[entry.category] ?? 0) + entry.amount;
+    totalThisCycle += entry.amount;
     if (entry.date === todayIso) {
-      spentToday[entry.category] += entry.amount;
+      spentToday[entry.category] = (spentToday[entry.category] ?? 0) + entry.amount;
+      totalToday += entry.amount;
     }
   }
 
-  return { spentThisCycle, spentToday };
+  return { spentThisCycle, spentToday, totalThisCycle, totalToday };
 }
 
-/** Live/shrinking allowance (Q1: B) — remainingBudget already reflects everything spent
- * this cycle including today, so dailyAllowance shrinks immediately as expenses are logged. */
-export function computeAllowanceBreakdown(
-  discretionaryBudget: number,
-  weights: CategoryWeights,
-  entries: ExpenseEntry[],
-  cycleWindow: CycleWindow,
-  today: Date,
-): AllowanceBreakdown {
-  const monthlyAllowances = computeCategoryMonthlyAllowances(discretionaryBudget, weights);
-  const { spentThisCycle } = computeSpendAggregates(entries, cycleWindow, today);
+/** How much needs to be saved per month, on average, from now until targetDate, to reach
+ * targetAmount given what's already banked (CR2 — replaces the old flat monthly
+ * savingsGoal). A targetDate in the past (overdue goal) still produces a sane, large
+ * number rather than dividing by zero — daysRemaining floors at 1, never at a whole month. */
+export function computeRequiredMonthlyPace(targetAmount: number, bankedTotal: number, targetDate: string, asOf: Date): number {
+  const remaining = Math.max(targetAmount - bankedTotal, 0);
+  const daysRemaining = Math.max(daysBetween(asOf, parseISODate(targetDate)), 1);
+  const monthsRemaining = daysRemaining / 30;
+  return remaining / monthsRemaining;
+}
 
-  const breakdown = {} as AllowanceBreakdown;
-  for (const category of CATEGORY_IDS) {
-    const monthlyAllowance = monthlyAllowances[category];
-    const spent = spentThisCycle[category];
-    const remainingBudget = Math.max(monthlyAllowance - spent, 0);
-    breakdown[category] = {
-      monthlyAllowance,
-      spentThisCycle: spent,
-      remainingBudget,
-      dailyAllowance: remainingBudget / cycleWindow.remainingDays,
-    };
+/** Banks completed cycles' effective savings into the running ledger total (CR2). Walks
+ * forward cycle-by-cycle from the last-banked cycle (or the goal's start cycle, if
+ * nothing has been banked yet) up to — but not including — the current cycle, so a
+ * gap of several missed app-opens still banks every cycle in between rather than just
+ * the most recent one. Recomputes each historical cycle's pace/budget using *current*
+ * income and fixed expenses (there's no historical snapshot of those) — an accepted
+ * approximation, not a full historical replay. Bounded to 60 iterations (5 years) as a
+ * safety cap, not an expected case. */
+export function updateSavingsLedger(
+  ledger: SavingsLedgerState,
+  goal: Goal,
+  cycleStartDay: number,
+  income: number,
+  fixedExpensesTotal: number,
+  entries: ExpenseEntry[],
+  today: Date,
+): SavingsLedgerState {
+  const currentCycle = getCycleWindow(cycleStartDay, today);
+  let bankedTotal = ledger.bankedTotal;
+  let lastBanked = ledger.lastBankedCycleStart;
+
+  // Resume from the cycle AFTER the last one banked, not the last-banked cycle itself
+  // (which would re-bank it every time this runs within the same current cycle).
+  const cursorStart = lastBanked
+    ? addDays(getCycleWindow(cycleStartDay, parseISODate(lastBanked)).end, 1)
+    : parseISODate(goal.startDate);
+  let cursorWindow = getCycleWindow(cycleStartDay, cursorStart);
+
+  let iterations = 0;
+  while (toISODate(cursorWindow.start) !== toISODate(currentCycle.start) && iterations < 60) {
+    const { totalThisCycle } = computeSpendAggregates(entries, cursorWindow, cursorWindow.end);
+    const pace = computeRequiredMonthlyPace(goal.targetAmount, bankedTotal, goal.targetDate, cursorWindow.end);
+    const budget = Math.max(income - fixedExpensesTotal - pace, 0);
+    bankedTotal += budget - totalThisCycle;
+    lastBanked = toISODate(cursorWindow.start);
+
+    const nextDay = addDays(cursorWindow.end, 1);
+    cursorWindow = getCycleWindow(cycleStartDay, nextDay);
+    iterations++;
   }
-  return breakdown;
+
+  return { bankedTotal, lastBankedCycleStart: lastBanked };
 }
 
 export function computeProgress(
   discretionaryBudget: number,
-  savingsGoal: number,
+  bankedTotal: number,
+  targetAmount: number,
+  requiredMonthlyPace: number,
   entries: ExpenseEntry[],
   cycleWindow: CycleWindow,
   today: Date,
 ): ProgressResult {
-  const { spentThisCycle } = computeSpendAggregates(entries, cycleWindow, today);
-  const totalDiscretionarySpend = sumAmounts(
-    CATEGORY_IDS.map((category) => ({ amount: spentThisCycle[category] })),
-  );
-  const effectiveSavings = discretionaryBudget - totalDiscretionarySpend;
-  const dailySpendRate = totalDiscretionarySpend / cycleWindow.dayIndex;
+  const { totalThisCycle } = computeSpendAggregates(entries, cycleWindow, today);
+  const currentCycleEffectiveSavings = discretionaryBudget - totalThisCycle;
+  const totalSavedSoFar = bankedTotal + currentCycleEffectiveSavings;
+  const dailySpendRate = totalThisCycle / cycleWindow.dayIndex;
 
-  if (savingsGoal === 0) {
+  if (targetAmount === 0) {
     return {
       hasGoal: false,
-      effectiveSavings,
+      totalSavedSoFar,
       percentOfGoal: null,
-      projectedEndOfCycleSavings: discretionaryBudget - totalDiscretionarySpend,
+      requiredMonthlyPace,
+      projectedEndOfCycleSavings: currentCycleEffectiveSavings,
       onTrack: null,
       projectedShortfall: 0,
       dailySpendRate,
     };
   }
 
-  const percentOfGoal = (effectiveSavings / savingsGoal) * 100;
+  const percentOfGoal = (totalSavedSoFar / targetAmount) * 100;
   const projectedTotalSpend = dailySpendRate * cycleWindow.totalDays;
   const projectedEndOfCycleSavings = discretionaryBudget - projectedTotalSpend;
-  const onTrack = projectedEndOfCycleSavings >= savingsGoal;
-  const projectedShortfall = onTrack ? 0 : savingsGoal - projectedEndOfCycleSavings;
+  const onTrack = projectedEndOfCycleSavings >= requiredMonthlyPace;
+  const projectedShortfall = onTrack ? 0 : requiredMonthlyPace - projectedEndOfCycleSavings;
 
   return {
     hasGoal: true,
-    effectiveSavings,
+    totalSavedSoFar,
     percentOfGoal,
+    requiredMonthlyPace,
     projectedEndOfCycleSavings,
     onTrack,
     projectedShortfall,

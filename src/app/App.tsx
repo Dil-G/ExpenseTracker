@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AppProvider, useAppState } from './state/AppProvider';
-import { SetupWizard } from './components/SetupWizard';
+import { FirstRunWizard } from './components/FirstRunWizard';
 import { TabBar } from './components/TabBar';
 import { TodaySummary } from './components/TodaySummary';
 import { CategoryBreakdown } from './components/CategoryBreakdown';
@@ -9,22 +9,61 @@ import { AddExpenseButton } from './components/AddExpenseButton';
 import { AddExpenseSheet } from './components/AddExpenseSheet';
 import { ProgressPanel } from './components/ProgressPanel';
 import { AdvicePanel } from './components/AdvicePanel';
-import { GearIcon } from './components/icons';
+import { TransactionsTab } from './components/TransactionsTab';
+import { RecurringTab } from './components/RecurringTab';
+import { SettingsTab } from './components/SettingsTab';
 
-function TodayTab() {
-  const { planView, allowanceBreakdown, lastUsedCategory, addExpense } = useAppState();
+function OverviewTab() {
+  const { planView, categories, categorySpend, todaySpend, progress, overviewMode, setOverviewMode, lastUsedCategory, addExpense } = useAppState();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  if (!planView.feasibility || !allowanceBreakdown) return null;
+  if (!planView.feasibility || !planView.config) return null;
 
   return (
     <div className="tab-panel">
       <InfeasibilityBanner feasibility={planView.feasibility} />
-      <TodaySummary allowances={allowanceBreakdown} />
-      <CategoryBreakdown allowances={allowanceBreakdown} />
+
+      <div className="overview-toggle" role="tablist" aria-label="Overview period">
+        <button
+          type="button"
+          className={overviewMode === 'daily' ? 'overview-toggle-button active' : 'overview-toggle-button'}
+          onClick={() => setOverviewMode('daily')}
+          data-testid="overview-mode-daily-button"
+        >
+          Daily
+        </button>
+        <button
+          type="button"
+          className={overviewMode === 'monthly' ? 'overview-toggle-button active' : 'overview-toggle-button'}
+          onClick={() => setOverviewMode('monthly')}
+          data-testid="overview-mode-monthly-button"
+        >
+          Monthly
+        </button>
+      </div>
+
+      {overviewMode === 'daily' && <TodaySummary todaySpend={todaySpend} />}
+
+      {overviewMode === 'monthly' && (
+        <>
+          <section className="today-summary" data-testid="monthly-budget-summary">
+            <h2>This Cycle</h2>
+            <p>
+              Spent: <strong className="num">{Object.values(categorySpend).reduce((s, v) => s + v, 0).toFixed(2)}</strong> / budget:{' '}
+              <strong className="num">{planView.feasibility.discretionaryBudget.toFixed(2)}</strong>
+            </p>
+          </section>
+          <CategoryBreakdown categories={categories} categorySpend={categorySpend} totalIncome={planView.config.monthlyIncome} />
+          {progress && planView.cycleWindow && <ProgressPanel progress={progress} cycleWindow={planView.cycleWindow} goal={planView.goal} />}
+        </>
+      )}
+
+      <AdvicePanel />
+
       <AddExpenseButton onClick={() => setIsSheetOpen(true)} />
       <AddExpenseSheet
         isOpen={isSheetOpen}
+        categories={categories}
         defaultCategory={lastUsedCategory}
         onSave={(input) => {
           addExpense(input);
@@ -36,42 +75,17 @@ function TodayTab() {
   );
 }
 
-function ProgressTab() {
-  const { progress, planView, allowanceBreakdown } = useAppState();
-  if (!progress || !planView.cycleWindow || !planView.config || !allowanceBreakdown) return null;
-  return (
-    <div className="tab-panel">
-      <ProgressPanel
-        progress={progress}
-        cycleWindow={planView.cycleWindow}
-        allowances={allowanceBreakdown}
-        savingsGoal={planView.config.savingsGoal}
-      />
-    </div>
-  );
-}
-
-function AdviceTab() {
-  return (
-    <div className="tab-panel">
-      <AdvicePanel />
-    </div>
-  );
-}
-
 function TabbedShell() {
-  const { activeTab, openSetupWizard } = useAppState();
+  const { activeTab } = useAppState();
   return (
     <div className="app-shell">
       <header className="app-header">
         <h1>Rollover</h1>
-        <button type="button" className="icon-button" onClick={openSetupWizard} aria-label="Edit setup" data-testid="settings-button">
-          <GearIcon />
-        </button>
       </header>
-      {activeTab === 'today' && <TodayTab />}
-      {activeTab === 'progress' && <ProgressTab />}
-      {activeTab === 'advice' && <AdviceTab />}
+      {activeTab === 'overview' && <OverviewTab />}
+      {activeTab === 'transactions' && <TransactionsTab />}
+      {activeTab === 'recurring' && <RecurringTab />}
+      {activeTab === 'settings' && <SettingsTab />}
       <TabBar />
     </div>
   );
@@ -82,7 +96,7 @@ function AppInner() {
   return (
     <>
       {planView.config ? <TabbedShell /> : null}
-      <SetupWizard />
+      <FirstRunWizard />
     </>
   );
 }

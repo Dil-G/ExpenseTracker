@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { CATEGORY_IDS, type CategoryId } from '../../core/types';
+import type { Category, CategoryId } from '../../core/types';
 import type { AddExpenseInput } from '../services/trackingService';
 
 interface Props {
   isOpen: boolean;
+  categories: Category[];
   defaultCategory: CategoryId;
   onSave: (input: AddExpenseInput) => void;
   onClose: () => void;
@@ -13,7 +14,7 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function AddExpenseSheet({ isOpen, defaultCategory, onSave, onClose }: Props) {
+export function AddExpenseSheet({ isOpen, categories, defaultCategory, onSave, onClose }: Props) {
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState<CategoryId>(defaultCategory);
   const [date, setDate] = useState(todayIso());
@@ -22,7 +23,7 @@ export function AddExpenseSheet({ isOpen, defaultCategory, onSave, onClose }: Pr
   if (!isOpen) return null;
 
   const amountValue = Number(amount);
-  const isValid = amount !== '' && amountValue > 0;
+  const isValid = amount !== '' && amountValue > 0 && category !== '';
 
   function handleSave() {
     if (!isValid) return;
@@ -52,10 +53,11 @@ export function AddExpenseSheet({ isOpen, defaultCategory, onSave, onClose }: Pr
         </label>
         <label>
           Category
-          <select value={category} onChange={(e) => setCategory(e.target.value as CategoryId)} data-testid="add-expense-category-select">
-            {CATEGORY_IDS.map((c) => (
-              <option key={c} value={c}>
-                {c}
+          <select value={category} onChange={(e) => setCategory(e.target.value)} data-testid="add-expense-category-select">
+            {categories.length === 0 && <option value="">No categories yet</option>}
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
               </option>
             ))}
           </select>
