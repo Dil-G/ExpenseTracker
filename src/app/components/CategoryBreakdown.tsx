@@ -11,7 +11,7 @@ export function CategoryBreakdown({ allowances }: { allowances: AllowanceBreakdo
           return (
             <li key={category} data-testid={`category-breakdown-${category}`}>
               <span className="category-name">{category}</span>
-              <span>
+              <span className="num">
                 {a.spentThisCycle.toFixed(2)} / {a.monthlyAllowance.toFixed(2)}
               </span>
             </li>

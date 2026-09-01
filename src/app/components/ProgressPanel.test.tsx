@@ -15,7 +15,7 @@ describe('ProgressPanel', () => {
     };
     render(<ProgressPanel progress={progress} />);
 
-    expect(screen.getByText('N/A — no goal set')).toBeInTheDocument();
+    expect(screen.getByText('N/A - no goal set')).toBeInTheDocument();
     expect(screen.queryByTestId('progress-bar')).not.toBeInTheDocument();
   });
 
@@ -31,7 +31,9 @@ describe('ProgressPanel', () => {
     render(<ProgressPanel progress={progress} />);
 
     expect(screen.getByTestId('progress-bar')).toBeInTheDocument();
-    expect(screen.getByText('60.0% of goal reached')).toBeInTheDocument();
+    // number is wrapped in its own <span class="num"> for tabular-figure styling, so the
+    // full sentence is split across nodes - match against the panel's combined text content.
+    expect(screen.getByTestId('progress-panel')).toHaveTextContent('60.0% of goal reached');
     expect(screen.queryByTestId('progress-projection-warning')).not.toBeInTheDocument();
   });
 

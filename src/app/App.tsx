@@ -9,6 +9,7 @@ import { AddExpenseButton } from './components/AddExpenseButton';
 import { AddExpenseSheet } from './components/AddExpenseSheet';
 import { ProgressPanel } from './components/ProgressPanel';
 import { AdvicePanel } from './components/AdvicePanel';
+import { GearIcon } from './components/icons';
 
 function TodayTab() {
   const { planView, allowanceBreakdown, lastUsedCategory, addExpense } = useAppState();
@@ -59,8 +60,8 @@ function TabbedShell() {
     <div className="app-shell">
       <header className="app-header">
         <h1>Rollover</h1>
-        <button type="button" onClick={openSetupWizard} aria-label="Edit setup" data-testid="settings-button">
-          ⚙
+        <button type="button" className="icon-button" onClick={openSetupWizard} aria-label="Edit setup" data-testid="settings-button">
+          <GearIcon />
         </button>
       </header>
       {activeTab === 'today' && <TodayTab />}

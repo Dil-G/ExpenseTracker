@@ -1,4 +1,81 @@
-/* Mobile-first: base rules target 360-430px, scaled up via the @media block at the bottom. */
+/*
+  Rollover design system.
+  Mobile-first: base rules target 360-430px, scaled up via the @media block at the bottom.
+
+  Design read: calm, premium-consumer fintech tool - not a marketing page. Priorities are
+  legibility of numbers, tactile feedback on the two-tap add flow, and restraint (this is a
+  daily-use utility, not a poster). Dials: VARIANCE 3, MOTION 4, DENSITY 4.
+
+  Shape system (documented, held consistent): primary CTA buttons = pill; cards, sheets,
+  the wizard card = 16px; inputs = 10px; the FAB = circle. Tab-bar buttons are nav items,
+  not CTAs, and stay flat by convention.
+*/
+
+:root {
+  --bg: #fafafa;
+  --surface: #ffffff;
+  --surface-2: #f4f4f5;
+  --border: #e4e4e7;
+  --text-primary: #18181b;
+  --text-secondary: #71717a;
+  --text-tertiary: #a1a1aa;
+
+  --accent: #059669;
+  --accent-strong: #047857;
+  --accent-soft: #d1fae5;
+  --accent-contrast: #ffffff;
+
+  --danger: #dc2626;
+  --danger-soft: #fef2f2;
+  --danger-border: #fecaca;
+  --danger-text: #991b1b;
+
+  --warning-text: #b45309;
+
+  --shadow-sm: 0 1px 2px rgba(24, 24, 27, 0.06);
+  --shadow-md: 0 4px 14px rgba(24, 24, 27, 0.08);
+  --shadow-lg: 0 16px 40px rgba(24, 24, 27, 0.16);
+
+  --radius-input: 10px;
+  --radius-card: 16px;
+
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI Variable', 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-fast: 140ms var(--ease);
+  --transition-base: 220ms var(--ease);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #09090b;
+    --surface: #18181b;
+    --surface-2: #27272a;
+    --border: #3f3f46;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-tertiary: #71717a;
+
+    --accent: #34d399;
+    --accent-strong: #6ee7b7;
+    --accent-soft: rgba(52, 211, 153, 0.14);
+    --accent-contrast: #052e1f;
+
+    --danger: #f87171;
+    --danger-soft: rgba(248, 113, 113, 0.1);
+    --danger-border: rgba(248, 113, 113, 0.3);
+    --danger-text: #fca5a5;
+
+    --warning-text: #fbbf24;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.55);
+  }
+}
 
 * {
   box-sizing: border-box;
@@ -6,54 +83,190 @@
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
-  background: #f7f7f8;
-  color: #1a1a1a;
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 4px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+}
+
+h2 {
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  font-weight: 650;
+  margin-bottom: 12px;
+}
+
+h3 {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  margin-top: 16px;
+}
+
+p {
+  margin: 0 0 8px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Tabular numerals for every money figure - the single biggest legibility win in a finance app. */
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  color: var(--text-primary);
 }
 
 button,
 input,
 select {
   font: inherit;
+  color: inherit;
 }
 
 /* All interactive elements: minimum 44px tap target (NFR-1). */
 button {
   min-height: 44px;
   min-width: 44px;
+  padding: 0 20px;
   border: none;
-  border-radius: 8px;
-  background: #2563eb;
-  color: white;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 600;
+  font-size: 15px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform var(--transition-fast), background var(--transition-fast), opacity var(--transition-fast);
+}
+
+button:hover {
+  background: var(--accent-strong);
+}
+
+button:active {
+  transform: scale(0.97);
 }
 
 button:disabled {
-  background: #94a3b8;
+  background: var(--surface-2);
+  color: var(--text-tertiary);
   cursor: not-allowed;
+  transform: none;
+}
+
+button.button-secondary {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+button.button-secondary:hover {
+  background: var(--surface-2);
+  color: var(--text-primary);
+}
+
+button.icon-button {
+  min-width: 44px;
+  width: 44px;
+  padding: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 50%;
+}
+
+button.icon-button:hover {
+  background: var(--surface-2);
+  color: var(--text-primary);
 }
 
 input,
 select {
   min-height: 44px;
   width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  margin-top: 4px;
-  margin-bottom: 12px;
+  padding: 8px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-input);
+  margin-top: 6px;
+  margin-bottom: 14px;
+  background: var(--surface);
+  color: var(--text-primary);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 label {
   display: block;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.icon-spin {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fade-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .app-shell {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  min-height: 100dvh;
   padding-bottom: 88px; /* clears the fixed tab bar + floating add button */
 }
 
@@ -63,20 +276,24 @@ label {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  background: white;
-  border-bottom: 1px solid #e2e8f0;
+  padding: 14px 16px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
   z-index: 5;
 }
 
 .app-header h1 {
-  font-size: 20px;
+  font-size: 19px;
   margin: 0;
+  letter-spacing: -0.02em;
 }
 
 .tab-panel {
-  padding: 16px;
+  padding: 20px 16px;
   padding-bottom: 96px;
+  animation: fade-slide-up var(--transition-base);
 }
 
 .tab-bar {
@@ -85,34 +302,47 @@ label {
   left: 0;
   right: 0;
   display: flex;
-  background: white;
-  border-top: 1px solid #e2e8f0;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border);
   z-index: 10;
 }
 
 .tab-bar-button {
   flex: 1;
+  min-height: 56px;
   background: transparent;
-  color: #64748b;
+  color: var(--text-tertiary);
   border-radius: 0;
+  font-size: 12px;
+  font-weight: 600;
+  transition: color var(--transition-fast);
+}
+
+.tab-bar-button:hover {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.tab-bar-button:active {
+  transform: scale(0.96);
 }
 
 .tab-bar-button.active {
-  color: #2563eb;
-  font-weight: 700;
+  color: var(--accent);
 }
 
 .add-expense-button {
   position: fixed;
-  bottom: 72px; /* sits just above the tab bar, thumb-reachable */
+  bottom: 76px; /* sits just above the tab bar, thumb-reachable */
   right: 20px;
   width: 56px;
   height: 56px;
   min-width: 56px;
+  padding: 0;
   border-radius: 50%;
-  font-size: 28px;
-  line-height: 1;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-lg);
   z-index: 10;
 }
 
@@ -120,10 +350,11 @@ label {
 .wizard-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(9, 9, 11, 0.5);
   display: flex;
   align-items: flex-end;
   z-index: 20;
+  animation: fade-slide-up 160ms var(--ease);
 }
 
 .wizard-overlay {
@@ -133,9 +364,19 @@ label {
 
 .sheet {
   width: 100%;
-  background: white;
-  border-radius: 16px 16px 0 0;
-  padding: 20px;
+  background: var(--surface);
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  padding: 12px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  box-shadow: var(--shadow-lg);
+  animation: sheet-in var(--transition-base);
+}
+
+.sheet-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+  margin: 0 auto 16px;
 }
 
 .wizard-card {
@@ -143,72 +384,200 @@ label {
   max-width: 420px;
   max-height: 90vh;
   overflow-y: auto;
-  background: white;
-  border-radius: 16px;
-  padding: 20px;
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  padding: 24px;
   position: relative;
+  box-shadow: var(--shadow-lg);
+  animation: card-in var(--transition-base);
 }
 
 .wizard-close {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  background: transparent;
-  color: #64748b;
+  top: 10px;
+  right: 10px;
+}
+
+.wizard-steps {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.wizard-step-dot {
+  height: 4px;
+  flex: 1;
+  border-radius: 999px;
+  background: var(--surface-2);
+  transition: background var(--transition-base);
+}
+
+.wizard-step-dot.done {
+  background: var(--accent-strong);
+}
+
+.wizard-step-dot.active {
+  background: var(--accent);
+}
+
+.fixed-expense-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+}
+
+.fixed-expense-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--surface-2);
+}
+
+.fixed-expense-list button {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 13px;
 }
 
 .wizard-actions,
 .sheet-actions {
   display: flex;
   gap: 12px;
+  margin-top: 8px;
+}
+
+.wizard-actions button,
+.sheet-actions button {
+  flex: 1;
 }
 
 .infeasibility-banner {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #991b1b;
-  border-radius: 8px;
-  padding: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-border);
+  color: var(--danger-text);
+  border-radius: var(--radius-card);
+  padding: 14px;
   margin-bottom: 16px;
+}
+
+.infeasibility-banner svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.infeasibility-banner p {
+  color: var(--danger-text);
+  margin: 0;
+}
+
+.infeasibility-banner p + p {
+  margin-top: 4px;
+}
+
+.today-summary,
+.category-breakdown,
+[data-testid='progress-panel'],
+[data-testid='advice-panel'] {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 18px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.today-summary strong {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .category-breakdown ul {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
 
 .category-breakdown li {
   display: flex;
   justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px solid #e2e8f0;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--surface-2);
+}
+
+.category-breakdown li:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
 .category-name {
   text-transform: capitalize;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .progress-bar-track {
-  height: 12px;
-  background: #e2e8f0;
-  border-radius: 6px;
+  height: 8px;
+  background: var(--surface-2);
+  border-radius: 999px;
   overflow: hidden;
-  margin: 8px 0;
+  margin: 10px 0;
 }
 
 .progress-bar-fill {
   height: 100%;
-  background: #2563eb;
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width var(--transition-base);
 }
 
 .advice-tone-warning {
-  color: #991b1b;
+  color: var(--warning-text);
   font-weight: 600;
 }
 
 .advice-tone-encouragement {
-  color: #166534;
+  color: var(--accent-strong);
   font-weight: 600;
+}
+
+[data-testid='advice-loading-spinner'] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+}
+
+[data-testid='advice-source-tag'] {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  padding: 3px 10px;
+  border-radius: 999px;
+  margin-bottom: 8px;
+}
+
+/* Reduced motion: collapse everything above to instant, no exceptions. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }
 
 /* Scale up for tablet/desktop - single column stays centered rather than stretching edge to edge. */
@@ -216,10 +585,11 @@ label {
   .app-shell {
     max-width: 480px;
     margin: 0 auto;
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
   }
 
-  .tab-bar,
-  .add-expense-button {
+  .tab-bar {
     left: 50%;
     transform: translateX(-50%);
     max-width: 480px;
@@ -227,7 +597,7 @@ label {
   }
 
   .add-expense-button {
+    left: auto;
     right: calc(50% - 240px + 20px);
-    transform: none;
   }
 }

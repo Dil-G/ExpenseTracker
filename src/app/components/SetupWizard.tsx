@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CATEGORY_IDS, type CategoryWeights, type FixedExpenseItem, type PlanConfig } from '../../core/types';
 import { weightsSumTo100 } from '../services/planService';
 import { useAppState } from '../state/AppProvider';
+import { CloseIcon } from './icons';
 
 interface Draft {
   monthlyIncome: string;
@@ -81,10 +82,16 @@ export function SetupWizard() {
     <div className="wizard-overlay">
       <div className="wizard-card">
         {planView.config && (
-          <button type="button" className="wizard-close" onClick={closeSetupWizard} data-testid="setup-wizard-close-button">
-            ✕
+          <button type="button" className="wizard-close icon-button" onClick={closeSetupWizard} data-testid="setup-wizard-close-button">
+            <CloseIcon />
           </button>
         )}
+
+        <div className="wizard-steps" aria-hidden="true">
+          {[1, 2, 3].map((s) => (
+            <span key={s} className={s === step ? 'wizard-step-dot active' : s < step ? 'wizard-step-dot done' : 'wizard-step-dot'} />
+          ))}
+        </div>
 
         {step === 1 && (
           <section>
@@ -142,11 +149,13 @@ export function SetupWizard() {
         {step === 2 && (
           <section>
             <h2>Fixed Expenses</h2>
-            <ul>
+            <ul className="fixed-expense-list">
               {draft.fixedExpenses.map((f) => (
                 <li key={f.id}>
-                  {f.name}: {f.amount}
-                  <button type="button" onClick={() => removeFixedExpense(f.id)} aria-label={`Remove ${f.name}`}>
+                  <span>
+                    {f.name}: <span className="num">{f.amount}</span>
+                  </span>
+                  <button type="button" className="button-secondary" onClick={() => removeFixedExpense(f.id)} aria-label={`Remove ${f.name}`}>
                     Remove
                   </button>
                 </li>
@@ -172,7 +181,7 @@ export function SetupWizard() {
               Add
             </button>
             <div className="wizard-actions">
-              <button type="button" onClick={() => setStep(1)}>
+              <button type="button" className="button-secondary" onClick={() => setStep(1)}>
                 Back
               </button>
               <button type="button" onClick={() => setStep(3)} data-testid="setup-wizard-step2-next-button">
@@ -205,9 +214,11 @@ export function SetupWizard() {
                 />
               </label>
             ))}
-            <p data-testid="setup-wizard-step3-weight-sum">Current total: {weightSum}%</p>
+            <p data-testid="setup-wizard-step3-weight-sum" className={step3Valid ? 'advice-tone-encouragement' : 'advice-tone-warning'}>
+              Current total: <span className="num">{weightSum}</span>%
+            </p>
             <div className="wizard-actions">
-              <button type="button" onClick={() => setStep(2)}>
+              <button type="button" className="button-secondary" onClick={() => setStep(2)}>
                 Back
               </button>
               <button type="button" disabled={!step3Valid} onClick={finish} data-testid="setup-wizard-step3-finish-button">

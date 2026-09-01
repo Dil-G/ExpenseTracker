@@ -36,6 +36,8 @@ export function AddExpenseSheet({ isOpen, defaultCategory, onSave, onClose }: Pr
   return (
     <div className="sheet-overlay">
       <div className="sheet" data-testid="add-expense-sheet">
+        <div className="sheet-handle" aria-hidden="true" />
+        <h2>Add Expense</h2>
         <label>
           Amount
           <input
@@ -67,7 +69,7 @@ export function AddExpenseSheet({ isOpen, defaultCategory, onSave, onClose }: Pr
           <input type="text" value={note} onChange={(e) => setNote(e.target.value)} data-testid="add-expense-note-input" />
         </label>
         <div className="sheet-actions">
-          <button type="button" onClick={onClose} data-testid="add-expense-cancel-button">
+          <button type="button" className="button-secondary" onClick={onClose} data-testid="add-expense-cancel-button">
             Cancel
           </button>
           <button type="button" disabled={!isValid} onClick={handleSave} data-testid="add-expense-save-button">

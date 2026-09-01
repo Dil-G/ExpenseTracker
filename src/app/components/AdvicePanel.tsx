@@ -1,4 +1,5 @@
 import { useAppState } from '../state/AppProvider';
+import { AlertIcon, SpinnerIcon } from './icons';
 
 export function AdvicePanel() {
   const { advice, requestAdvice } = useAppState();
@@ -16,14 +17,18 @@ export function AdvicePanel() {
         </>
       )}
 
-      {advice.status === 'loading' && <p data-testid="advice-loading-spinner">Loading advice...</p>}
+      {advice.status === 'loading' && (
+        <p data-testid="advice-loading-spinner">
+          <SpinnerIcon width={16} height={16} /> Loading advice...
+        </p>
+      )}
 
       {advice.status === 'error' && (
         <>
-          <p data-testid="advice-error-message" role="alert">
-            {advice.errorMessage ?? 'Advice is temporarily unavailable.'}
+          <p data-testid="advice-error-message" role="alert" className="advice-tone-warning">
+            <AlertIcon width={16} height={16} /> {advice.errorMessage ?? 'Advice is temporarily unavailable.'}
           </p>
-          <button type="button" onClick={requestAdvice} data-testid="advice-retry-button">
+          <button type="button" className="button-secondary" onClick={requestAdvice} data-testid="advice-retry-button">
             Retry
           </button>
         </>
@@ -41,7 +46,8 @@ export function AdvicePanel() {
               <ul>
                 {advice.data.categoriesToTrim.map((c) => (
                   <li key={c.category}>
-                    {c.category}: ~{c.suggestedReductionAmount.toFixed(2)} — {c.reason}
+                    <span className="category-name">{c.category}</span>: ~<span className="num">{c.suggestedReductionAmount.toFixed(2)}</span>.{' '}
+                    {c.reason}
                   </li>
                 ))}
               </ul>
