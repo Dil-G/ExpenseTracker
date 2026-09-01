@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAppState } from '../state/AppProvider';
 import { toISODate } from '../../core/dateUtils';
 import { PencilIcon, TrashIcon } from './icons';
+import { DateInput } from './DateInput';
 
 function SetupSection() {
   const { planView, saveSetup, fixedExpenses } = useAppState();
@@ -86,7 +87,7 @@ function GoalSection() {
       </label>
       <label>
         Target date
-        <input type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} data-testid="settings-goal-date-input" />
+        <DateInput value={targetDate} onChange={(e) => setTargetDate(e.target.value)} data-testid="settings-goal-date-input" />
       </label>
       <button type="button" disabled={!isValid} onClick={save} data-testid="settings-save-goal-button">
         {saved ? 'Saved' : 'Save Goal'}

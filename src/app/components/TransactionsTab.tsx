@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useAppState } from '../state/AppProvider';
 import { formatMoney } from '../utils/formatMoney';
 import { PencilIcon, TrashIcon } from './icons';
+import { DateInput } from './DateInput';
 import type { ExpenseEntry } from '../../core/types';
 
 function EditRow({ entry, onDone }: { entry: ExpenseEntry; onDone: () => void }) {
@@ -30,7 +31,7 @@ function EditRow({ entry, onDone }: { entry: ExpenseEntry; onDone: () => void })
           </option>
         ))}
       </select>
-      <input type="date" value={date} onChange={(e) => setDate(e.target.value)} data-testid="transaction-edit-date-input" />
+      <DateInput value={date} onChange={(e) => setDate(e.target.value)} data-testid="transaction-edit-date-input" />
       <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note" data-testid="transaction-edit-note-input" />
       <div className="sheet-actions">
         <button type="button" className="button-secondary" onClick={onDone}>
@@ -76,8 +77,8 @@ export function TransactionsTab() {
               </option>
             ))}
           </select>
-          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} aria-label="From date" data-testid="transactions-date-from" />
-          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} aria-label="To date" data-testid="transactions-date-to" />
+          <DateInput value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} aria-label="From date" data-testid="transactions-date-from" />
+          <DateInput value={dateTo} onChange={(e) => setDateTo(e.target.value)} aria-label="To date" data-testid="transactions-date-to" />
         </div>
       </section>
 

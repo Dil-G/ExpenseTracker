@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Category, CategoryId } from '../../core/types';
 import type { AddExpenseInput } from '../services/trackingService';
+import { DateInput } from './DateInput';
 
 interface Props {
   isOpen: boolean;
@@ -64,7 +65,7 @@ export function AddExpenseSheet({ isOpen, categories, defaultCategory, onSave, o
         </label>
         <label>
           Date
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} data-testid="add-expense-date-input" />
+          <DateInput value={date} onChange={(e) => setDate(e.target.value)} data-testid="add-expense-date-input" />
         </label>
         <label>
           Note (optional)
