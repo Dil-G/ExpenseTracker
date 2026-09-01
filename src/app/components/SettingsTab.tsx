@@ -5,6 +5,7 @@ import { formatMoney } from '../utils/formatMoney';
 import { PencilIcon, TrashIcon } from './icons';
 import { DateInput } from './DateInput';
 import { EditModal } from './EditModal';
+import { generateAugustDemoEntries, generateDemoRecurringPayments } from '../utils/demoData';
 
 function SetupSection() {
   const { planView, saveSetup, fixedExpenses } = useAppState();
@@ -252,6 +253,33 @@ function CategoriesSection() {
   );
 }
 
+function DemoDataSection() {
+  const { categories, addExpense, addRecurringPayment } = useAppState();
+  const [status, setStatus] = useState<'idle' | 'done'>('idle');
+
+  function load() {
+    generateAugustDemoEntries(categories).forEach((entry) => addExpense(entry));
+    generateDemoRecurringPayments(categories).forEach((payment) => addRecurringPayment(payment));
+    setStatus('done');
+    setTimeout(() => setStatus('idle'), 3000);
+  }
+
+  return (
+    <section className="card-section" data-testid="settings-demo-data-section">
+      <h2>Demo Data</h2>
+      <p>Fill August 2026 with sample transactions and recurring payments, to see Transactions, Overview and Recurring with real data.</p>
+      <button type="button" onClick={load} data-testid="settings-load-demo-data-button">
+        Load Demo Data
+      </button>
+      {status === 'done' && (
+        <p role="status" className="advice-tone-encouragement">
+          Demo data loaded.
+        </p>
+      )}
+    </section>
+  );
+}
+
 export function SettingsTab() {
   const { planView } = useAppState();
   if (!planView.config) return null;
@@ -260,6 +288,7 @@ export function SettingsTab() {
       <SetupSection />
       <GoalSection />
       <CategoriesSection />
+      <DemoDataSection />
     </div>
   );
 }
