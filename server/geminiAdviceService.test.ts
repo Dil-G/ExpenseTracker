@@ -1,0 +1,97 @@
+// @vitest-environment node
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { AdviceRequestPayload } from '../src/core/types';
+
+const generateContentMock = vi.fn();
+
+vi.mock('@google/genai', () => ({
+  GoogleGenAI: vi.fn().mockImplementation(function () {
+    return { models: { generateContent: generateContentMock } };
+  }),
+  Type: { OBJECT: 'OBJECT', STRING: 'STRING', NUMBER: 'NUMBER', ARRAY: 'ARRAY' },
+}));
+
+const { getAdvice, GeminiAdviceError } = await import('./geminiAdviceService');
+
+const PAYLOAD: AdviceRequestPayload = {
+  income: 3000,
+  fixedExpensesTotal: 1100,
+  savingsGoal: 500,
+  currency: 'USD',
+  feasibility: { feasible: true, discretionaryBudget: 1400, shortfall: 0, largestFeasibleGoal: 1900 },
+  categoryAllowances: {
+    food: { monthlyAllowance: 560, spentThisCycle: 100, remainingBudget: 460, dailyAllowance: 15 },
+    transport: { monthlyAllowance: 350, spentThisCycle: 50, remainingBudget: 300, dailyAllowance: 10 },
+    entertainment: { monthlyAllowance: 210, spentThisCycle: 0, remainingBudget: 210, dailyAllowance: 7 },
+    other: { monthlyAllowance: 280, spentThisCycle: 20, remainingBudget: 260, dailyAllowance: 8.6 },
+  },
+  progress: {
+    hasGoal: true,
+    effectiveSavings: 1230,
+    percentOfGoal: 246,
+    projectedEndOfCycleSavings: 1230,
+    onTrack: true,
+    projectedShortfall: 0,
+  },
+};
+
+describe('getAdvice', () => {
+  beforeEach(() => {
+    process.env.GEMINI_API_KEY = 'test-key';
+    generateContentMock.mockReset();
+  });
+
+  afterEach(() => {
+    delete process.env.GEMINI_API_KEY;
+    delete process.env.GEMINI_MODEL;
+  });
+
+  it('parses a valid structured response into AdviceResponse', async () => {
+    const response = {
+      howToReachGoal: 'Trim food a bit.',
+      categoriesToTrim: [{ category: 'food', suggestedReductionAmount: 20, reason: 'Slightly over pace' }],
+      firstStep: 'Track lunches this week.',
+      tone: 'encouragement',
+      message: 'You are doing well.',
+    };
+    generateContentMock.mockResolvedValue({ text: JSON.stringify(response) });
+
+    const result = await getAdvice(PAYLOAD);
+    expect(result).toEqual(response);
+  });
+
+  it('throws GeminiAdviceError when GEMINI_API_KEY is missing', async () => {
+    delete process.env.GEMINI_API_KEY;
+    await expect(getAdvice(PAYLOAD)).rejects.toThrow(GeminiAdviceError);
+  });
+
+  it('throws GeminiAdviceError when the SDK call rejects', async () => {
+    generateContentMock.mockRejectedValue(new Error('network down'));
+    await expect(getAdvice(PAYLOAD)).rejects.toThrow(GeminiAdviceError);
+  });
+
+  it('throws GeminiAdviceError when the response text is malformed JSON', async () => {
+    generateContentMock.mockResolvedValue({ text: 'not json{{{' });
+    await expect(getAdvice(PAYLOAD)).rejects.toThrow(GeminiAdviceError);
+  });
+
+  it('throws GeminiAdviceError when the response has no text', async () => {
+    generateContentMock.mockResolvedValue({ text: undefined });
+    await expect(getAdvice(PAYLOAD)).rejects.toThrow(GeminiAdviceError);
+  });
+
+  it('uses GEMINI_MODEL env var when set', async () => {
+    process.env.GEMINI_MODEL = 'gemini-custom-model';
+    generateContentMock.mockResolvedValue({
+      text: JSON.stringify({
+        howToReachGoal: 'x',
+        categoriesToTrim: [],
+        firstStep: 'x',
+        tone: 'encouragement',
+        message: 'x',
+      }),
+    });
+    await getAdvice(PAYLOAD);
+    expect(generateContentMock).toHaveBeenCalledWith(expect.objectContaining({ model: 'gemini-custom-model' }));
+  });
+});

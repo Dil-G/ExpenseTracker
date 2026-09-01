@@ -1,0 +1,233 @@
+/* Mobile-first: base rules target 360-430px, scaled up via the @media block at the bottom. */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background: #f7f7f8;
+  color: #1a1a1a;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+/* All interactive elements: minimum 44px tap target (NFR-1). */
+button {
+  min-height: 44px;
+  min-width: 44px;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: white;
+  cursor: pointer;
+}
+
+button:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+input,
+select {
+  min-height: 44px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  margin-top: 4px;
+  margin-bottom: 12px;
+}
+
+label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding-bottom: 88px; /* clears the fixed tab bar + floating add button */
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  z-index: 5;
+}
+
+.app-header h1 {
+  font-size: 20px;
+  margin: 0;
+}
+
+.tab-panel {
+  padding: 16px;
+  padding-bottom: 96px;
+}
+
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  background: white;
+  border-top: 1px solid #e2e8f0;
+  z-index: 10;
+}
+
+.tab-bar-button {
+  flex: 1;
+  background: transparent;
+  color: #64748b;
+  border-radius: 0;
+}
+
+.tab-bar-button.active {
+  color: #2563eb;
+  font-weight: 700;
+}
+
+.add-expense-button {
+  position: fixed;
+  bottom: 72px; /* sits just above the tab bar, thumb-reachable */
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  border-radius: 50%;
+  font-size: 28px;
+  line-height: 1;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
+.sheet-overlay,
+.wizard-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: flex-end;
+  z-index: 20;
+}
+
+.wizard-overlay {
+  align-items: center;
+  justify-content: center;
+}
+
+.sheet {
+  width: 100%;
+  background: white;
+  border-radius: 16px 16px 0 0;
+  padding: 20px;
+}
+
+.wizard-card {
+  width: 100%;
+  max-width: 420px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  position: relative;
+}
+
+.wizard-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: transparent;
+  color: #64748b;
+}
+
+.wizard-actions,
+.sheet-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.infeasibility-banner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.category-breakdown ul {
+  list-style: none;
+  padding: 0;
+}
+
+.category-breakdown li {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.category-name {
+  text-transform: capitalize;
+}
+
+.progress-bar-track {
+  height: 12px;
+  background: #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 8px 0;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: #2563eb;
+}
+
+.advice-tone-warning {
+  color: #991b1b;
+  font-weight: 600;
+}
+
+.advice-tone-encouragement {
+  color: #166534;
+  font-weight: 600;
+}
+
+/* Scale up for tablet/desktop - single column stays centered rather than stretching edge to edge. */
+@media (min-width: 600px) {
+  .app-shell {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .tab-bar,
+  .add-expense-button {
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 480px;
+    width: 100%;
+  }
+
+  .add-expense-button {
+    right: calc(50% - 240px + 20px);
+    transform: none;
+  }
+}
