@@ -1,4 +1,5 @@
 import { useAppState } from '../state/AppProvider';
+import { formatMoney } from '../utils/formatMoney';
 import { AlertIcon, SpinnerIcon } from './icons';
 
 export function AdvicePanel() {
@@ -46,7 +47,7 @@ export function AdvicePanel() {
               <ul>
                 {advice.data.categoriesToTrim.map((c) => (
                   <li key={c.category}>
-                    <span className="category-name">{c.category}</span>: ~<span className="num">{c.suggestedReductionAmount.toFixed(2)}</span>.{' '}
+                    <span className="category-name">{c.category}</span>: ~<span className="num">{formatMoney(c.suggestedReductionAmount)}</span>.{' '}
                     {c.reason}
                   </li>
                 ))}

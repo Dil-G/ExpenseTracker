@@ -1,4 +1,5 @@
 import type { FeasibilityResult } from '../../core/types';
+import { formatMoney } from '../utils/formatMoney';
 import { AlertIcon } from './icons';
 
 export function InfeasibilityBanner({ feasibility }: { feasibility: FeasibilityResult }) {
@@ -9,8 +10,8 @@ export function InfeasibilityBanner({ feasibility }: { feasibility: FeasibilityR
       <div>
         <p>Your current plan doesn't add up: fixed expenses plus savings goal exceed your income.</p>
         <p>
-          Shortfall: <span className="num">{feasibility.shortfall.toFixed(2)}</span> - largest feasible savings goal right now:{' '}
-          <span className="num">{feasibility.largestFeasibleGoal.toFixed(2)}</span>
+          Shortfall: <span className="num">{formatMoney(feasibility.shortfall)}</span> - largest feasible savings goal right now:{' '}
+          <span className="num">{formatMoney(feasibility.largestFeasibleGoal)}</span>
         </p>
       </div>
     </div>

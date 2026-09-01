@@ -28,7 +28,7 @@ export function RecurringTab() {
 
   return (
     <div className="tab-panel">
-      <section data-testid="recurring-list">
+      <section className="card-section" data-testid="recurring-list">
         <h2>Recurring Payments</h2>
         <p>Auto-logged as a transaction each cycle once its due day passes.</p>
         {recurringPayments.length === 0 && <p>None yet.</p>}
@@ -46,7 +46,7 @@ export function RecurringTab() {
         </ul>
       </section>
 
-      <section data-testid="recurring-add-form">
+      <section className="card-section" data-testid="recurring-add-form">
         <h2>Add Recurring Payment</h2>
         <label>
           Name

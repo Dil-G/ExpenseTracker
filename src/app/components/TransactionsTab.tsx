@@ -66,7 +66,7 @@ export function TransactionsTab() {
 
   return (
     <div className="tab-panel">
-      <section data-testid="transactions-filters">
+      <section className="card-section" data-testid="transactions-filters">
         <h2>Transactions</h2>
         <div className="transactions-filter-row">
           <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} data-testid="transactions-category-filter">
@@ -82,7 +82,7 @@ export function TransactionsTab() {
         </div>
       </section>
 
-      <section data-testid="transactions-list">
+      <section className="card-section" data-testid="transactions-list">
         {filtered.length === 0 && <p>No transactions match.</p>}
         <ul className="transaction-list">
           {filtered.map((entry) =>

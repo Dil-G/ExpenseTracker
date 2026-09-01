@@ -12,6 +12,7 @@ import { AdvicePanel } from './components/AdvicePanel';
 import { TransactionsTab } from './components/TransactionsTab';
 import { RecurringTab } from './components/RecurringTab';
 import { SettingsTab } from './components/SettingsTab';
+import { formatMoney } from './utils/formatMoney';
 
 function OverviewTab() {
   const { planView, categories, categorySpend, todaySpend, progress, overviewMode, setOverviewMode, lastUsedCategory, addExpense } = useAppState();
@@ -49,8 +50,8 @@ function OverviewTab() {
           <section className="today-summary" data-testid="monthly-budget-summary">
             <h2>This Cycle</h2>
             <p>
-              Spent: <strong className="num">{Object.values(categorySpend).reduce((s, v) => s + v, 0).toFixed(2)}</strong> / budget:{' '}
-              <strong className="num">{planView.feasibility.discretionaryBudget.toFixed(2)}</strong>
+              Spent: <strong className="num">{formatMoney(Object.values(categorySpend).reduce((s, v) => s + v, 0))}</strong> / budget:{' '}
+              <strong className="num">{formatMoney(planView.feasibility.discretionaryBudget)}</strong>
             </p>
           </section>
           <CategoryBreakdown categories={categories} categorySpend={categorySpend} totalIncome={planView.config.monthlyIncome} />

@@ -1,98 +1,172 @@
 import { useState } from 'react';
 import { useAppState } from '../state/AppProvider';
 import { toISODate } from '../../core/dateUtils';
+import { formatMoney } from '../utils/formatMoney';
 import { PencilIcon, TrashIcon } from './icons';
 import { DateInput } from './DateInput';
+import { EditModal } from './EditModal';
 
 function SetupSection() {
   const { planView, saveSetup, fixedExpenses } = useAppState();
   const config = planView.config!;
+  const [isEditing, setIsEditing] = useState(false);
   const [income, setIncome] = useState(String(config.monthlyIncome));
   const [cycleDay, setCycleDay] = useState(String(config.cycleStartDay));
   const [currency, setCurrency] = useState(config.currency);
-  const [saved, setSaved] = useState(false);
 
   const incomeNum = Number(income);
   const cycleDayNum = Number(cycleDay);
   const isValid = income !== '' && incomeNum >= 0 && cycleDayNum >= 1 && cycleDayNum <= 28 && currency.trim().length > 0;
 
+  function openEdit() {
+    setIncome(String(config.monthlyIncome));
+    setCycleDay(String(config.cycleStartDay));
+    setCurrency(config.currency);
+    setIsEditing(true);
+  }
+
   function save() {
     if (!isValid) return;
     saveSetup({ monthlyIncome: incomeNum, cycleStartDay: cycleDayNum, currency: currency.trim() }, fixedExpenses);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setIsEditing(false);
   }
 
   return (
-    <section className="settings-section" data-testid="settings-setup-section">
-      <h2>Setup</h2>
-      <label>
-        Monthly net income
-        <input type="number" inputMode="decimal" min={0} value={income} onChange={(e) => setIncome(e.target.value)} data-testid="settings-income-input" />
-      </label>
-      <label>
-        Cycle start day (1-28)
-        <input
-          type="number"
-          inputMode="numeric"
-          min={1}
-          max={28}
-          value={cycleDay}
-          onChange={(e) => setCycleDay(e.target.value)}
-          data-testid="settings-cycle-day-input"
-        />
-      </label>
-      <label>
-        Currency
-        <input type="text" value={currency} onChange={(e) => setCurrency(e.target.value)} data-testid="settings-currency-input" />
-      </label>
-      <button type="button" disabled={!isValid} onClick={save} data-testid="settings-save-setup-button">
-        {saved ? 'Saved' : 'Save'}
-      </button>
-    </section>
+    <>
+      <section className="card-section" data-testid="settings-setup-section">
+        <div className="card-header">
+          <h2>Setup</h2>
+          <button type="button" className="icon-button" onClick={openEdit} aria-label="Edit setup" data-testid="settings-edit-setup-button">
+            <PencilIcon width={16} height={16} />
+          </button>
+        </div>
+        <dl className="readonly-list">
+          <div className="readonly-row">
+            <dt>Monthly net income</dt>
+            <dd className="num">{formatMoney(config.monthlyIncome)}</dd>
+          </div>
+          <div className="readonly-row">
+            <dt>Cycle start day</dt>
+            <dd className="num">{config.cycleStartDay}</dd>
+          </div>
+          <div className="readonly-row">
+            <dt>Currency</dt>
+            <dd>{config.currency}</dd>
+          </div>
+        </dl>
+      </section>
+
+      {isEditing && (
+        <EditModal title="Edit Setup" onClose={() => setIsEditing(false)}>
+          <label>
+            Monthly net income
+            <input type="number" inputMode="decimal" min={0} value={income} onChange={(e) => setIncome(e.target.value)} data-testid="settings-income-input" />
+          </label>
+          <label>
+            Cycle start day (1-28)
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={28}
+              value={cycleDay}
+              onChange={(e) => setCycleDay(e.target.value)}
+              data-testid="settings-cycle-day-input"
+            />
+          </label>
+          <label>
+            Currency
+            <input type="text" value={currency} onChange={(e) => setCurrency(e.target.value)} data-testid="settings-currency-input" />
+          </label>
+          <div className="wizard-actions">
+            <button type="button" className="button-secondary" onClick={() => setIsEditing(false)}>
+              Cancel
+            </button>
+            <button type="button" disabled={!isValid} onClick={save} data-testid="settings-save-setup-button">
+              Save
+            </button>
+          </div>
+        </EditModal>
+      )}
+    </>
   );
 }
 
 function GoalSection() {
   const { planView, saveGoal } = useAppState();
   const goal = planView.goal;
+  const [isEditing, setIsEditing] = useState(false);
   const [targetAmount, setTargetAmount] = useState(goal ? String(goal.targetAmount) : '');
   const [targetDate, setTargetDate] = useState(goal?.targetDate ?? '');
-  const [saved, setSaved] = useState(false);
 
   const amountNum = Number(targetAmount);
   const isValid = targetAmount !== '' && amountNum > 0 && targetDate !== '';
 
+  function openEdit() {
+    setTargetAmount(goal ? String(goal.targetAmount) : '');
+    setTargetDate(goal?.targetDate ?? '');
+    setIsEditing(true);
+  }
+
   function save() {
     if (!isValid) return;
     saveGoal({ targetAmount: amountNum, targetDate, startDate: goal?.startDate ?? toISODate(new Date()) });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setIsEditing(false);
   }
 
   return (
-    <section className="settings-section" data-testid="settings-goal-section">
-      <h2>Savings Goal</h2>
-      <p>Any target, any timeframe - e.g. 500,000 in 6 months.</p>
-      <label>
-        Target amount
-        <input
-          type="number"
-          inputMode="decimal"
-          min={0}
-          value={targetAmount}
-          onChange={(e) => setTargetAmount(e.target.value)}
-          data-testid="settings-goal-amount-input"
-        />
-      </label>
-      <label>
-        Target date
-        <DateInput value={targetDate} onChange={(e) => setTargetDate(e.target.value)} data-testid="settings-goal-date-input" />
-      </label>
-      <button type="button" disabled={!isValid} onClick={save} data-testid="settings-save-goal-button">
-        {saved ? 'Saved' : 'Save Goal'}
-      </button>
-    </section>
+    <>
+      <section className="card-section" data-testid="settings-goal-section">
+        <div className="card-header">
+          <h2>Savings Goal</h2>
+          <button type="button" className="icon-button" onClick={openEdit} aria-label="Edit goal" data-testid="settings-edit-goal-button">
+            <PencilIcon width={16} height={16} />
+          </button>
+        </div>
+        {goal ? (
+          <dl className="readonly-list">
+            <div className="readonly-row">
+              <dt>Target amount</dt>
+              <dd className="num">{formatMoney(goal.targetAmount)}</dd>
+            </div>
+            <div className="readonly-row">
+              <dt>Target date</dt>
+              <dd>{goal.targetDate}</dd>
+            </div>
+          </dl>
+        ) : (
+          <p>No goal set - any target, any timeframe, e.g. 500,000 in 6 months.</p>
+        )}
+      </section>
+
+      {isEditing && (
+        <EditModal title="Edit Savings Goal" onClose={() => setIsEditing(false)}>
+          <label>
+            Target amount
+            <input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              value={targetAmount}
+              onChange={(e) => setTargetAmount(e.target.value)}
+              data-testid="settings-goal-amount-input"
+            />
+          </label>
+          <label>
+            Target date
+            <DateInput value={targetDate} onChange={(e) => setTargetDate(e.target.value)} data-testid="settings-goal-date-input" />
+          </label>
+          <div className="wizard-actions">
+            <button type="button" className="button-secondary" onClick={() => setIsEditing(false)}>
+              Cancel
+            </button>
+            <button type="button" disabled={!isValid} onClick={save} data-testid="settings-save-goal-button">
+              Save
+            </button>
+          </div>
+        </EditModal>
+      )}
+    </>
   );
 }
 
@@ -130,7 +204,7 @@ function CategoriesSection() {
   }
 
   return (
-    <section className="settings-section" data-testid="settings-categories-section">
+    <section className="card-section" data-testid="settings-categories-section">
       <h2>Categories</h2>
       {blockedMessage && (
         <p role="alert" className="advice-tone-warning" data-testid="settings-category-blocked-message">
@@ -182,7 +256,7 @@ export function SettingsTab() {
   const { planView } = useAppState();
   if (!planView.config) return null;
   return (
-    <div className="tab-panel">
+    <div className="tab-panel settings-tab">
       <SetupSection />
       <GoalSection />
       <CategoriesSection />

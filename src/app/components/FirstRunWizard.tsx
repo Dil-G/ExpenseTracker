@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FixedExpenseItem, PlanConfig } from '../../core/types';
 import { useAppState } from '../state/AppProvider';
+import { formatMoney } from '../utils/formatMoney';
 import { CloseIcon } from './icons';
 
 interface Draft {
@@ -107,7 +108,7 @@ export function FirstRunWizard() {
               {draft.fixedExpenses.map((f) => (
                 <li key={f.id}>
                   <span>
-                    {f.name}: <span className="num">{f.amount}</span>
+                    {f.name}: <span className="num">{formatMoney(f.amount)}</span>
                   </span>
                   <button type="button" className="button-secondary" onClick={() => removeFixedExpense(f.id)} aria-label={`Remove ${f.name}`}>
                     <CloseIcon width={14} height={14} />

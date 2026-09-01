@@ -765,8 +765,9 @@ label {
   box-shadow: var(--shadow-sm);
 }
 
-/* Settings tab (CR2) */
-.settings-section {
+/* Generic card section - used by Settings, Recurring, Transactions (any tab whose
+   sections aren't already covered by a more specific card selector above). */
+.card-section {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
@@ -833,6 +834,57 @@ label {
 .transaction-row--editing {
   flex-direction: column;
   align-items: stretch;
+}
+
+/* Card header (title + edit icon) - Settings read-only cards */
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.card-header h2 {
+  margin-bottom: 0;
+}
+
+/* Settings card titles read as titles, not the small eyebrow labels used elsewhere
+   (Today/This Cycle/etc) - bigger, sentence case, primary color. */
+.settings-tab h2 {
+  font-size: 19px;
+  text-transform: none;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+/* Read-only key-value rows inside a card (Settings) */
+.readonly-list {
+  margin: 0;
+}
+
+.readonly-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--surface-2);
+}
+
+.readonly-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.readonly-row dt {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.readonly-row dd {
+  margin: 0;
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
 /* Scale up for tablet/desktop - single column stays centered rather than stretching edge to edge. */
